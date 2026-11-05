@@ -171,7 +171,9 @@ sudo apt install ./dist/lovearound_0.2.<N>_all.deb
 `N` is the commit count of this repository (0.1.x came from the old shared
 one). `publish.sh` makes it the GitHub release `v0.2.N`, as
 `lovearound_0.2.N_all.deb` and `LoveAround.deb`; lovearound.me/download/LoveAround.deb
-redirects to the latest one. `build.sh` needs only `dpkg-deb`
+redirects to the latest one. Normally a release is **Actions → Release → Run workflow** (or
+`gh workflow run release -R lovearound-me/linux`): tests, `build.sh` and
+`publish.sh` on a GitHub runner. `build.sh` needs only `dpkg-deb`
 (and runs `lintian` when it's there). No Flatpak: the sandbox can't install
 a GNOME Shell extension, a KWin script or talk layer-shell into the host in
 a way that survives, so a Flatpak would always be the notification fallback

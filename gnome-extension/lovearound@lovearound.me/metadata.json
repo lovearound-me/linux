@@ -1,0 +1,8 @@
+{
+  "uuid": "lovearound@lovearound.me",
+  "name": "Love Around",
+  "description": "Draws the Love Around signal over every screen: a glow along the edges and emoji floating up, never taking a click. Needs the Love Around app; does nothing on its own.",
+  "shell-version": ["45", "46", "47", "48", "49"],
+  "url": "https://lovearound.me",
+  "version": 1
+}

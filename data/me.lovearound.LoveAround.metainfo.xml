@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>me.lovearound.LoveAround</id>
+  <name>Love Around</name>
+  <summary>Tap when you think of someone</summary>
+  <summary xml:lang="es">Toca cuando pienses en alguien</summary>
+  <summary xml:lang="pt">Toque quando pensar em alguém</summary>
+  <summary xml:lang="de">Tipp, wenn du an jemanden denkst</summary>
+  <summary xml:lang="fr">Touche quand tu penses à quelqu’un</summary>
+  <summary xml:lang="it">Tocca quando pensi a qualcuno</summary>
+  <summary xml:lang="pl">Kliknij, kiedy o kimś myślisz</summary>
+  <summary xml:lang="tr">Birini düşündüğünde dokun</summary>
+  <summary xml:lang="uk">Натисни, коли думаєш про когось</summary>
+  <summary xml:lang="ru">Нажми, когда думаешь о ком-то</summary>
+  <summary xml:lang="id">Ketuk saat kamu memikirkan seseorang</summary>
+  <summary xml:lang="ko">누군가 생각날 때 누르세요</summary>
+  <summary xml:lang="zh">想到某个人时，点一下</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="me.lovearound">
+    <name>Love Around</name>
+  </developer>
+  <description>
+    <p>A heart in the tray. Thinking of someone? Tap their circle, and the edges of their screen softly glow in the color they chose, while emoji float up from below. They won’t know who it was from.</p>
+    <p xml:lang="es">Un corazón en la bandeja. ¿Piensas en alguien? Toca su círculo y los bordes de su pantalla brillarán suavemente con el color que eligió, mientras suben emojis desde abajo. No sabrá de quién viene.</p>
+    <p xml:lang="pt">Um coração na bandeja. Pensando em alguém? Toque no círculo da pessoa, e as bordas da tela dela vão brilhar suavemente na cor que ela escolheu, enquanto emojis sobem de baixo. Ela não vai saber de quem veio.</p>
+    <p xml:lang="de">Ein Herz in der Leiste. Du denkst an jemanden? Tipp auf den Kreis, und die Ränder des Bildschirms leuchten sanft in der Farbe, die die Person gewählt hat, während von unten Emojis aufsteigen. Von wem, erfährt sie nicht.</p>
+    <p xml:lang="fr">Un cœur dans la zone de notification. Tu penses à quelqu’un ? Touche son cercle, et les bords de son écran s’illuminent doucement de la couleur qu’elle a choisie, tandis que des emojis montent du bas. Elle ne saura pas de qui ça vient.</p>
+    <p xml:lang="it">Un cuore nell’area di notifica. Stai pensando a qualcuno? Tocca il suo cerchio, e i bordi del suo schermo si illumineranno piano del colore che ha scelto, mentre dal basso salgono le emoji. Non saprà da chi arriva.</p>
+    <p xml:lang="pl">Serduszko w zasobniku. Myślisz o kimś? Kliknij jego kółko, a krawędzie jego ekranu delikatnie rozświetlą się wybranym przez niego kolorem, a od dołu wypłyną emoji. Nie dowie się, od kogo.</p>
+    <p xml:lang="tr">Sistem tepsisinde bir kalp. Birini mi düşünüyorsun? Dairesine dokun; ekranının kenarları seçtiği renkte yumuşakça parlasın, alttan emojiler yükselsin. Kimden geldiğini bilmeyecek.</p>
+    <p xml:lang="uk">Сердечко в треї. Думаєш про когось — натисни на його кружечок, і краї його екрана м’яко засвітяться обраним ним кольором, а знизу спливуть смайлики. Від кого — не дізнається.</p>
+    <p xml:lang="ru">Сердечко в трее. Думаешь о ком-то — нажми на его кружок, и края его экрана мягко засветятся выбранным им цветом, а снизу всплывут смайлики. От кого — он не узнает.</p>
+    <p xml:lang="id">Hati di baki sistem. Sedang memikirkan seseorang? Ketuk lingkarannya, dan tepi layarnya akan menyala lembut dengan warna pilihannya, sementara emoji melayang dari bawah. Dia tidak akan tahu dari siapa.</p>
+    <p xml:lang="ko">트레이의 하트. 누군가가 생각나나요? 그 사람의 원을 누르면 상대 화면의 가장자리가 그 사람이 고른 색으로 은은하게 빛나고, 아래에서 이모지가 떠올라요. 누가 보냈는지는 몰라요.</p>
+    <p xml:lang="zh">托盘里的一颗爱心。在想某个人吗？点一下对方的圆圈，对方屏幕的边缘就会以他们选的颜色柔和地发光，下方还会飘起表情。对方不会知道是谁。</p>
+  </description>
+  <launchable type="desktop-id">me.lovearound.LoveAround.desktop</launchable>
+  <url type="homepage">https://lovearound.me</url>
+  <content_rating type="oars-1.1"/>
+  <provides>
+    <binary>lovearound</binary>
+  </provides>
+</component>

@@ -1,0 +1,9 @@
+#!/usr/bin/python3
+"""Love Around: the launcher /usr/bin/lovearound, and the .desktop's Exec."""
+import sys
+
+sys.path.insert(0, "/usr/lib/lovearound")
+
+from lovearound.app import main  # noqa: E402
+
+sys.exit(main())

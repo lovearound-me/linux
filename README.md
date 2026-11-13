@@ -128,6 +128,7 @@ The window hides on Escape and on losing focus, like a menu.
 | `gnome-extension/lovearound@lovearound.me/` | the GNOME Shell extension: glow + emoji, presenting, popup placement |
 | `data/` | `.desktop` (`x-scheme-handler/lovearound` and the old `…/needed`), AppStream metainfo |
 | `tools/make_icons.py` | hicolor PNGs from `icons.app_icon` |
+| `install.sh` | where the app's installed files go, for any prefix; `build.sh` packs its `/usr` tree into the `.deb` with the doc and APT files |
 | `tests/` | unit tests, `fake_server.py` (Firebase Auth + the server on localhost) |
 
 ## Sign-in
@@ -178,6 +179,31 @@ redirects to the latest one. Normally a release is **Actions → Release → Run
 a GNOME Shell extension, a KWin script or talk layer-shell into the host in
 a way that survives, so a Flatpak would always be the notification fallback
 on GNOME.
+
+## Other distros
+
+The `.deb` is for Ubuntu and Debian. Elsewhere `install.sh` puts the same files
+in place, from a checkout:
+
+```sh
+sudo pacman -S python-gobject python-cairo python-cryptography gtk3 libsoup3 \
+    libsecret gtk-layer-shell gsound    # Arch; other distros: the same libraries
+./install.sh --user                     # into ~/.local, no root
+sudo ./install.sh                       # into /usr/local
+./install.sh --user --uninstall
+```
+
+It stops before touching an earlier install when a Python module or typelib the
+app needs is missing (`lovearound/deps.py`), and names them all; it installs no
+packages. libsecret, gtk-layer-shell and gsound are optional: without them the
+sign-in is kept only until the app quits, KDE and wlroots on Wayland get a
+notification instead of the glow, and signals make no sound. `--user`
+needs `~/.local/bin` on the session's PATH for the menu entry, the
+`lovearound://` links and autostart: fish on CachyOS adds it, plain Arch does
+not. A package for another distro runs
+`./install.sh --prefix /usr --destdir <staging>`, as `build.sh` does. Nothing
+updates such an install: run `install.sh` again after a `git pull`, then quit
+the app and start it again.
 
 ## Updates
 

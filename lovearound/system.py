@@ -159,7 +159,7 @@ class System:
 
     @staticmethod
     def extension_installed(uuid):
-        """On disk, where GNOME Shell looks at login (the package puts ours in /usr/share)."""
+        """On disk, where GNOME Shell looks at login."""
         dirs = [GLib.get_user_data_dir()] + list(GLib.get_system_data_dirs())
         return any(os.path.isfile(os.path.join(d, "gnome-shell", "extensions", uuid, "metadata.json")) for d in dirs)
 

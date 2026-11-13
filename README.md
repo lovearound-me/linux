@@ -181,9 +181,12 @@ on GNOME.
 
 ## Updates
 
-The package adds the APT repository `https://lovearound.me/apt` (a flat one,
-`Suites: ./`) when installed from a download, so the desktop's own updater
-(Software / Discover / unattended upgrades) and `apt upgrade` update it. It
+The package adds the APT repository `https://lovearound.me/apt` when installed
+from a download, so the desktop's own updater (Software / Discover / unattended
+upgrades) and `apt upgrade` update it. A flat repository: `URIs:
+https://lovearound.me/`, `Suites: apt/`, `Suite: apt` in `Release`
+(with `Suites: ./` apt would ask for `/apt/./InRelease`, which Firebase
+redirects to its origin, a 404). It
 installs `/etc/apt/sources.list.d/lovearound.sources` (a plain file, not a
 conffile, so it goes away with the package) and the key
 `/usr/share/keyrings/lovearound.gpg` (`data/lovearound.gpg`).

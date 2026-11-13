@@ -68,10 +68,15 @@ if [ -n "$UNINSTALL" ]; then
     exit 0
 fi
 
+# Under sudo the checkout belongs to another user, which git refuses without safe.directory.
+git() { command git -c safe.directory="$PWD" "$@"; }
+if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" != false ]; then
+    echo "lovearound: the version is counted from git history; install from a full clone" >&2
+    exit 1
+fi
 # 0.2.<commit count of this repository>. 0.2 because the 0.1 builds came from
 # the old shared repository, whose count reached 0.1.92.
-# Under sudo the checkout belongs to another user, which git refuses without safe.directory.
-VERSION="0.2.$(git -c safe.directory="$PWD" rev-list --count HEAD 2>/dev/null || echo 0)"
+VERSION="0.2.$(git rev-list --count HEAD)"
 
 # Checked before the old install is removed. The launcher's interpreter is
 # /usr/bin/python3, whatever python3 is on PATH.

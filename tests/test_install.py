@@ -30,8 +30,8 @@ class KWinScriptTest(unittest.TestCase):
         self.assertEqual(presenting.kwin_script_path(), os.path.join(ROOT, "kwin", "fullscreen.js"))
 
 
-def run_install(*args, cwd=None, **env):
-    return subprocess.run(["bash", os.path.join(ROOT, "install.sh"), *args],
+def run_install(*args, tree=ROOT, cwd=None, **env):
+    return subprocess.run(["bash", os.path.join(tree, "install.sh"), *args],
                           capture_output=True, text=True, cwd=cwd, env=dict(os.environ, **env))
 
 
@@ -82,6 +82,24 @@ class InstallScriptTest(unittest.TestCase):
             self.assertEqual(gone.returncode, 0, gone.stderr)
             shutil.rmtree(fake)
             self.assertEqual(files_mentioning(home, "lovearound"), [])
+
+    def assert_refused(self, tree, home):
+        done = run_install("--user", tree=tree, HOME=home, XDG_DATA_HOME=os.path.join(home, "data"))
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("git history", done.stderr)
+        self.assertEqual(files_mentioning(home, "lovearound"), [])
+
+    def test_a_tree_without_git_is_refused(self):
+        with tempfile.TemporaryDirectory() as tree, tempfile.TemporaryDirectory() as home:
+            shutil.copy2(os.path.join(ROOT, "install.sh"), tree)
+            self.assert_refused(tree, home)
+
+    def test_a_shallow_clone_is_refused(self):
+        with tempfile.TemporaryDirectory() as work, tempfile.TemporaryDirectory() as home:
+            tree = os.path.join(work, "clone")
+            subprocess.run(["git", "clone", "-q", "--depth", "1", "--no-checkout", "file://" + ROOT, tree], check=True)
+            shutil.copy2(os.path.join(ROOT, "install.sh"), tree)
+            self.assert_refused(tree, home)
 
     def test_a_relative_destdir_is_the_callers(self):
         with tempfile.TemporaryDirectory() as work:

@@ -35,6 +35,12 @@ def run_install(*args, tree=ROOT, cwd=None, **env):
                           capture_output=True, text=True, cwd=cwd, env=dict(os.environ, **env))
 
 
+def missing_module(directory, name):
+    with open(os.path.join(directory, name + ".py"), "w") as f:
+        f.write("raise ImportError(\"No module named '%s'\")\n" % name)
+    return directory
+
+
 def files_mentioning(root, word):
     found = []
     for d, _, files in os.walk(root):
@@ -69,9 +75,7 @@ class InstallScriptTest(unittest.TestCase):
 
             fake = os.path.join(home, "fake")
             os.makedirs(fake)
-            with open(os.path.join(fake, "cryptography.py"), "w") as f:
-                f.write("raise ImportError(\"No module named 'cryptography'\")\n")
-            refused = run_install("--user", PYTHONPATH=fake, **env)
+            refused = run_install("--user", PYTHONPATH=missing_module(fake, "cryptography"), **env)
             self.assertNotEqual(refused.returncode, 0)
             self.assertIn("cryptography", refused.stderr)
             self.assertTrue(os.path.exists(os.path.join(local, "lib", "lovearound", "lovearound", "app.py")))
@@ -100,6 +104,14 @@ class InstallScriptTest(unittest.TestCase):
             subprocess.run(["git", "clone", "-q", "--depth", "1", "--no-checkout", "file://" + ROOT, tree], check=True)
             shutil.copy2(os.path.join(ROOT, "install.sh"), tree)
             self.assert_refused(tree, home)
+
+    def test_a_destdir_run_names_a_missing_dependency(self):
+        with tempfile.TemporaryDirectory() as work:
+            done = run_install("--prefix", "/usr", "--destdir", os.path.join(work, "stage"),
+                               PYTHONPATH=missing_module(work, "cryptography"))
+            self.assertNotEqual(done.returncode, 0)
+            self.assertIn("cryptography", done.stderr)
+            self.assertFalse(os.path.exists(os.path.join(work, "stage")))
 
     def test_a_relative_destdir_is_the_callers(self):
         with tempfile.TemporaryDirectory() as work:

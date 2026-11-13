@@ -78,10 +78,10 @@ fi
 # the old shared repository, whose count reached 0.1.92.
 VERSION="0.2.$(git rev-list --count HEAD)"
 
-# Checked before the old install is removed. The launcher's interpreter is
-# /usr/bin/python3, whatever python3 is on PATH.
-if [ -z "$DESTDIR" ]; then
-    /usr/bin/python3 - <<'CHECK'
+# Checked before anything is removed. make_icons.py imports lovearound, whose
+# __init__ requires every typelib, so a package build needs them too. The
+# launcher's interpreter is /usr/bin/python3, whatever python3 is on PATH.
+/usr/bin/python3 - <<'CHECK'
 import importlib
 import importlib.util
 import sys
@@ -114,7 +114,6 @@ if missing:
           file=sys.stderr)
     sys.exit(1)
 CHECK
-fi
 
 # The running app imports from $lib, which must never be visible half-written.
 staged="$lib.new"

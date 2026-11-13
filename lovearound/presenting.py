@@ -28,11 +28,9 @@ KWIN_SCRIPT = "lovearound-fullscreen"
 
 
 def kwin_script_path():
-    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for path in ("/usr/share/lovearound/kwin/fullscreen.js", os.path.join(here, "kwin", "fullscreen.js")):
-        if os.path.exists(path):
-            return path
-    return None
+    # Beside the package, in a checkout and in an install alike.
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "kwin", "fullscreen.js")
+    return path if os.path.exists(path) else None
 
 
 class Presenting:

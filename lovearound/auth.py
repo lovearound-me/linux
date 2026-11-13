@@ -76,12 +76,32 @@ class SecretStore:
     def _attrs(self):
         return {"app": config.APP_ID}
 
+    def _ensure_unlocked(self):
+        """False when the default collection is locked and the user refused to unlock it."""
+        Secret = self.Secret
+        try:
+            service = Secret.Service.get_sync(Secret.ServiceFlags.NONE, None)
+            collection = Secret.Collection.for_alias_sync(
+                service, Secret.COLLECTION_DEFAULT, Secret.CollectionFlags.NONE, None)
+            locked = collection is not None and collection.get_locked()
+        except Exception:  # noqa: BLE001 - the lookup that follows reports a missing service
+            return True
+        if not locked:
+            return True
+        try:
+            return service.unlock_sync([collection], None)[0] > 0
+        except Exception:  # noqa: BLE001 - the prompt dismissed
+            return False
+
     def load(self):
         if not self.available:
             return None
         try:
+            # password_lookup_sync prompts again on a locked collection after a refusal.
+            if not self._ensure_unlocked():
+                return None
             text = self.Secret.password_lookup_sync(self.schema, self._attrs(), None)
-        except Exception:  # noqa: BLE001 - no service on the bus, a locked keyring dismissed
+        except Exception:  # noqa: BLE001 - no service on the bus
             self.available = False
             return None
         if not text:
@@ -101,7 +121,7 @@ class SecretStore:
             self.available = False
 
     def clear(self):
-        if not self.available:
+        if not self.available or not self._ensure_unlocked():
             return
         try:
             self.Secret.password_clear_sync(self.schema, self._attrs(), None)

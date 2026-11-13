@@ -30,6 +30,14 @@ install -m 644 data/me.lovearound.LoveAround.metainfo.xml "$ROOT/usr/share/metai
 install -m 644 kwin/fullscreen.js "$ROOT/usr/share/$PKG/kwin/"
 cp -r gnome-extension/lovearound@lovearound.me "$ROOT/usr/share/gnome-shell/extensions/"
 python3 tools/make_icons.py "$ROOT/usr/share/icons/hicolor"
+# The APT repository at lovearound.me/apt (tools/make_repo.sh), so apt and the
+# desktop's updater update the package once it is installed from a download.
+# The source is a plain file, not a conffile: removing the package must take it
+# away with the keyring, or apt update fails on a missing Signed-By. (lintian
+# flags both; they are rules for packages in the Debian archive.)
+mkdir -p "$ROOT/usr/share/keyrings" "$ROOT/etc/apt/sources.list.d"
+install -m 644 data/lovearound.gpg "$ROOT/usr/share/keyrings/lovearound.gpg"
+install -m 644 data/lovearound.sources "$ROOT/etc/apt/sources.list.d/lovearound.sources"
 
 cat > "$ROOT/usr/share/doc/$PKG/copyright" <<COPY
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
@@ -66,9 +74,9 @@ $PKG ($VERSION) stable; urgency=low
 LOG
 
 find "$ROOT" -type d -exec chmod 755 {} +
-find "$ROOT/usr" -type f ! -path "*/usr/bin/*" -exec chmod 644 {} +
+find "$ROOT/usr" "$ROOT/etc" -type f ! -path "*/usr/bin/*" -exec chmod 644 {} +
 
-SIZE="$(du -sk "$ROOT/usr" | cut -f1)"
+SIZE="$(du -sk "$ROOT/usr" "$ROOT/etc" | awk '{ s += $1 } END { print s }')"
 cat > "$ROOT/DEBIAN/control" <<CONTROL
 Package: $PKG
 Version: $VERSION
@@ -116,5 +124,5 @@ dpkg-deb --root-owner-group -Zxz --build "$ROOT" "$DEB" >/dev/null
 rm -rf "$ROOT"
 echo "$DEB"
 if command -v lintian >/dev/null; then
-    lintian --profile ubuntu --suppress-tags no-manual-page,extended-description-is-probably-too-short "$DEB" || true
+    lintian --profile ubuntu --suppress-tags no-manual-page,extended-description-is-probably-too-short,file-in-etc-not-marked-as-conffile,package-installs-apt-sources "$DEB" || true
 fi

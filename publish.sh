@@ -5,6 +5,12 @@
 # name and as LoveAround.deb. lovearound.me/download/LoveAround.deb redirects
 # to the latest release's LoveAround.deb (firebase.json in the site repo).
 #
+# The release also carries the signed index of the APT repository
+# lovearound.me/apt (tools/make_repo.sh), which firebase.json redirects to the
+# latest release; so the installed apps see a version only once it is
+# released. Signing needs the key: APT_SIGNING_KEY (in CI, the GitHub secret)
+# or the file ~/.config/lovearound/apt_signing_key.asc.
+#
 # Needs gh, logged in with write access to the repository; the release is
 # tagged at HEAD, so push first.
 #
@@ -26,9 +32,10 @@ STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 cp "$DEB" "$STAGE/"
 cp "$DEB" "$STAGE/LoveAround.deb"
+tools/make_repo.sh "$DEB" "$STAGE/apt"
 
 echo ">> releasing $TAG ($(du -h "$DEB" | cut -f1))"
 gh release create "$TAG" -R "$REPO" --target "$(git rev-parse HEAD)" --latest \
   --title "Love Around $VERSION" --notes "" \
-  "$STAGE/$(basename "$DEB")" "$STAGE/LoveAround.deb"
+  "$STAGE/$(basename "$DEB")" "$STAGE/LoveAround.deb" "$STAGE"/apt/*
 echo ">> done: https://github.com/$REPO/releases/tag/$TAG"

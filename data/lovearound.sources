@@ -1,0 +1,6 @@
+# Love Around (https://lovearound.me): updates for the lovearound package.
+# Comes with the package and goes away with it (not a conffile on purpose).
+Types: deb
+URIs: https://lovearound.me/apt
+Suites: ./
+Signed-By: /usr/share/keyrings/lovearound.gpg

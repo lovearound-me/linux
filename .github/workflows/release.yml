@@ -19,7 +19,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends python3-cairo python3-gi python3-gi-cairo \
-            python3-cryptography gir1.2-gtk-3.0 gir1.2-soup-3.0 gir1.2-secret-1 gir1.2-gtklayershell-0.1 lintian
+            python3-cryptography gir1.2-gtk-3.0 gir1.2-soup-3.0 gir1.2-secret-1 gir1.2-gtklayershell-0.1 lintian apt-utils
       - name: Check
         run: |
           python3 i18n/check.py
@@ -30,3 +30,4 @@ jobs:
         run: ./publish.sh
         env:
           GH_TOKEN: ${{ github.token }}
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }} # tools/make_repo.sh

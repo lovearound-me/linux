@@ -181,9 +181,32 @@ on GNOME.
 
 ## Updates
 
-The package is meant to come from an APT repository (not set up yet, see
-below), so the desktop's own updater (Software / Discover / unattended
-upgrades) updates it. "Проверить обновления…" opens that updater. The
+The package adds the APT repository `https://lovearound.me/apt` (a flat one,
+`Suites: ./`) when installed from a download, so the desktop's own updater
+(Software / Discover / unattended upgrades) and `apt upgrade` update it. It
+installs `/etc/apt/sources.list.d/lovearound.sources` (a plain file, not a
+conffile, so it goes away with the package) and the key
+`/usr/share/keyrings/lovearound.gpg` (`data/lovearound.gpg`).
+
+The repository has no files of its own: each release carries its signed index
+(`Packages`, `InRelease`…, written by `tools/make_repo.sh`), and
+`firebase.json` in the site repo redirects `/apt/<file>` to the latest release
+and `/apt/pool/<version>/<deb>` to the release `v<version>`. So an installed
+app sees a version exactly when it is released. The index is signed in CI with
+the GitHub secret `APT_SIGNING_KEY` (ed25519, fingerprint
+`5B173A2F669393134B8246555B80ECCCD83D2840`, no passphrase); a local
+`publish.sh` reads `~/.config/lovearound/apt_signing_key.asc`. Lose that key
+and the installed apps never get another update: keep a copy elsewhere.
+
+By hand, for anyone who wants the repository without the download:
+
+```sh
+sudo curl -fsSLo /usr/share/keyrings/lovearound.gpg https://lovearound.me/apt/lovearound.gpg
+sudo curl -fsSLo /etc/apt/sources.list.d/lovearound.sources https://raw.githubusercontent.com/lovearound-me/linux/main/data/lovearound.sources
+sudo apt update && sudo apt install lovearound
+```
+
+"Проверить обновления…" opens the desktop's updater. The
 running app watches its own `VERSION` file: when apt replaces it, the app
 restarts itself into the new version as soon as no window of it is open.
 

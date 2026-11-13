@@ -9,7 +9,7 @@ from gi.repository import GLib, GObject
 from . import config, palette, tasks
 from .i18n import tr, trn
 from .api import API, APIError
-from .auth import Auth, AuthError
+from .auth import Auth, AuthError, SecretStore
 from .http import Unreachable
 from .settings import Settings
 from .stream import Stream
@@ -92,10 +92,10 @@ class AppModel(GObject.Object):
 
     def __init__(self, auth=None, settings=None):
         super().__init__()
-        self.auth = auth or Auth()
+        self.settings = settings or Settings()
+        self.auth = auth or Auth(SecretStore(self.settings))
         self.api = API(self.auth)
         self.stream = Stream(self.auth)
-        self.settings = settings or Settings()
         self.serial = tasks.Serial()
         # Set by the app: play(color, emoji, count, calm), presenting(), sound(), open_uri(uri).
         self.overlay = None

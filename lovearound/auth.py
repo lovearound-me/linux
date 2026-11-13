@@ -57,11 +57,21 @@ class Session:
     refreshToken: str
 
 
+def load_plan(flag, locked):
+    """The keyring step for the keyringSession flag and the lock state of the
+    default collection: "lookup", "unlock" first, "skip", or "delete" a session
+    the user signed out of while the keyring was locked."""
+    if locked:
+        return "skip" if flag in ("none", "signedOut") else "unlock"
+    return "delete" if flag == "signedOut" else "lookup"
+
+
 class SecretStore:
     """The session in the Secret Service. With no service running (a bare
     window manager, no keyring) it is kept in memory only: never in a plain file."""
 
-    def __init__(self):
+    def __init__(self, settings=None):
+        self.settings = settings if settings is not None else {}
         self.available = True
         try:
             import gi
@@ -76,34 +86,47 @@ class SecretStore:
     def _attrs(self):
         return {"app": config.APP_ID}
 
-    def _ensure_unlocked(self):
-        """False when the default collection is locked and the user refused to unlock it."""
+    def _set_flag(self, value):
+        # Each assignment saves the settings file, and a token refresh calls this from a worker thread.
+        if self.settings.get("keyringSession") != value:
+            self.settings["keyringSession"] = value
+
+    def _locked_default(self):
+        """(service, collection) when the default collection is locked, else None."""
         Secret = self.Secret
         try:
             service = Secret.Service.get_sync(Secret.ServiceFlags.NONE, None)
             collection = Secret.Collection.for_alias_sync(
                 service, Secret.COLLECTION_DEFAULT, Secret.CollectionFlags.NONE, None)
-            locked = collection is not None and collection.get_locked()
-        except Exception:  # noqa: BLE001 - the lookup that follows reports a missing service
-            return True
-        if not locked:
-            return True
+        except Exception:  # noqa: BLE001 - no service on the bus
+            return None
+        if collection is None or not collection.get_locked():
+            return None
+        return service, collection
+
+    def _unlock(self, service, collection):
         try:
             return service.unlock_sync([collection], None)[0] > 0
-        except Exception:  # noqa: BLE001 - the prompt dismissed
+        except Exception:  # noqa: BLE001 - a D-Bus error, taken as a refusal
             return False
 
     def load(self):
         if not self.available:
             return None
+        locked = self._locked_default()
+        plan = load_plan(self.settings.get("keyringSession"), locked is not None)
+        if plan == "skip" or (plan == "unlock" and not self._unlock(*locked)):
+            return None
         try:
-            # password_lookup_sync prompts again on a locked collection after a refusal.
-            if not self._ensure_unlocked():
+            if plan == "delete":
+                self.Secret.password_clear_sync(self.schema, self._attrs(), None)
+                self._set_flag("none")
                 return None
             text = self.Secret.password_lookup_sync(self.schema, self._attrs(), None)
         except Exception:  # noqa: BLE001 - no service on the bus
             self.available = False
             return None
+        self._set_flag("stored" if text else "none")
         if not text:
             return None
         try:
@@ -119,14 +142,21 @@ class SecretStore:
                                             "Love Around", json.dumps(asdict(session)), None)
         except Exception:  # noqa: BLE001
             self.available = False
+            return
+        self._set_flag("stored")
 
     def clear(self):
-        if not self.available or not self._ensure_unlocked():
+        if not self.available:
+            return
+        locked = self._locked_default()
+        if locked is not None and not self._unlock(*locked):
+            self._set_flag("signedOut")
             return
         try:
             self.Secret.password_clear_sync(self.schema, self._attrs(), None)
         except Exception:  # noqa: BLE001
-            pass
+            return
+        self._set_flag("none")
 
 
 class MemoryStore:
@@ -253,10 +283,12 @@ class Auth:
 
     def sign_out(self):
         with self._lock:
+            had_session = self.session is not None
             self.session = None
             self._id_token = None
             self._expires_at = 0.0
-        self.store.clear()
+        if had_session:
+            self.store.clear()
 
     def _adopt(self, session):
         self.session = session

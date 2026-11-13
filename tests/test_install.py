@@ -84,7 +84,7 @@ class InstallScriptTest(unittest.TestCase):
             self.assertIn("cryptography", refused.stderr)
             self.assertTrue(os.path.exists(os.path.join(local, "lib", "lovearound", "lovearound", "app.py")))
 
-            again = run_install("--user", "--version", "0.2.99", **env)
+            again = run_install("--user", "--as-version", "0.2.99", **env)
             self.assertEqual(again.returncode, 0, again.stderr)
             with open(os.path.join(local, "lib", "lovearound", "lovearound", "VERSION")) as f:
                 self.assertEqual(f.read().strip(), "0.2.99")
@@ -152,7 +152,7 @@ class GetScriptTest(unittest.TestCase):
             done = run_get(home, "v0.2.99", {"install.sh": 'echo "$@" > "$HOME/args"\n'})
             self.assertEqual(done.returncode, 0, done.stderr)
             with open(os.path.join(home, "args")) as f:
-                self.assertEqual(f.read().strip(), "--user --version 0.2.99")
+                self.assertEqual(f.read().strip(), "--user --as-version 0.2.99")
 
     def test_a_release_without_install_sh_is_refused(self):
         with tempfile.TemporaryDirectory() as home:

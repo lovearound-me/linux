@@ -43,8 +43,9 @@ lib="$P/lib/$PKG"
 # GNOME Shell and the desktop look for a user's files in XDG_DATA_HOME, not under the prefix.
 share="$DESTDIR${DATA:-$PREFIX/share}"
 
-remove() {
-    rm -rf "$lib" "$share/gnome-shell/extensions/$EXTENSION"
+# Everything installed but the code, which a reinstall swaps instead.
+remove_files() {
+    rm -rf "$share/gnome-shell/extensions/$EXTENSION"
     rm -f "$P/bin/$PKG" "$share/applications/$APP_ID.desktop" "$share/metainfo/$APP_ID.metainfo.xml" \
         "$share"/icons/hicolor/*/apps/$APP_ID.png
 }
@@ -61,7 +62,8 @@ refresh_caches() {
 }
 
 if [ -n "$UNINSTALL" ]; then
-    remove
+    rm -rf "$lib" "$lib.new" "$lib.old"
+    remove_files
     refresh_caches
     exit 0
 fi
@@ -109,19 +111,26 @@ if missing:
 CHECK
 fi
 
-# A reinstall must leave no file a newer version dropped.
-remove
-mkdir -p "$lib/kwin" "$lib/lovearound/i18n" "$P/bin" "$share/applications" "$share/metainfo" "$share/gnome-shell/extensions"
+# The running app imports from $lib, which must never be visible half-written.
+staged="$lib.new"
+rm -rf "$staged" "$lib.old"
+mkdir -p "$staged/kwin" "$staged/lovearound/i18n"
 # The code, without caches; VERSION is what the running app watches for an upgrade.
-tar --exclude=__pycache__ -cf - lovearound | tar -xf - -C "$lib"
-echo "$VERSION" > "$lib/lovearound/VERSION"
+tar --exclude=__pycache__ -cf - lovearound | tar -xf - -C "$staged"
+echo "$VERSION" > "$staged/lovearound/VERSION"
 # The dictionaries (i18n.py).
-cp i18n/*.json "$lib/lovearound/i18n/"
+cp i18n/*.json "$staged/lovearound/i18n/"
+install -m 644 kwin/fullscreen.js "$staged/kwin/"
+
+# A reinstall must leave no file a newer version dropped.
+remove_files
+mkdir -p "$P/bin" "$share/applications" "$share/metainfo" "$share/gnome-shell/extensions"
 install -m 755 bin/lovearound "$P/bin/$PKG"
 install -m 644 data/$APP_ID.desktop "$share/applications/"
 install -m 644 data/$APP_ID.metainfo.xml "$share/metainfo/"
-install -m 644 kwin/fullscreen.js "$lib/kwin/"
 cp -r gnome-extension/$EXTENSION "$share/gnome-shell/extensions/"
 /usr/bin/python3 tools/make_icons.py "$share/icons/hicolor"
+[ ! -d "$lib" ] || mv "$lib" "$lib.old"
+mv "$staged" "$lib"
+rm -rf "$lib.old"
 refresh_caches
-

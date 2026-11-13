@@ -1,7 +1,8 @@
 #!/bin/bash
 # Installs Love Around on any distro: ./install.sh --user puts it in ~/.local,
 # sudo ./install.sh in /usr/local. Packagers pass --prefix /usr --destdir
-# <staging>. --uninstall removes the same files.
+# <staging>. --uninstall removes the same files. A release archive, which has
+# no git history, passes --version.
 # Dependencies are checked, not installed: their package names differ by distro.
 set -euo pipefail
 
@@ -12,9 +13,10 @@ PREFIX=/usr/local
 DESTDIR=
 UNINSTALL=
 DATA=
+VERSION=
 
 usage() {
-    echo "usage: $0 [--user | --prefix DIR] [--destdir DIR] [--uninstall]" >&2
+    echo "usage: $0 [--user | --prefix DIR] [--destdir DIR] [--version X.Y.Z] [--uninstall]" >&2
     exit 2
 }
 
@@ -23,6 +25,7 @@ while [ $# -gt 0 ]; do
         --user) PREFIX="$HOME/.local"; DATA="${XDG_DATA_HOME:-$HOME/.local/share}" ;;
         --prefix) [ $# -ge 2 ] || usage; PREFIX="$2"; shift ;;
         --destdir) [ $# -ge 2 ] || usage; DESTDIR="$2"; shift ;;
+        --version) [ $# -ge 2 ] || usage; VERSION="$2"; shift ;;
         --uninstall) UNINSTALL=1 ;;
         *) usage ;;
     esac
@@ -68,15 +71,17 @@ if [ -n "$UNINSTALL" ]; then
     exit 0
 fi
 
-# Under sudo the checkout belongs to another user, which git refuses without safe.directory.
-git() { command git -c safe.directory="$PWD" "$@"; }
-if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" != false ]; then
-    echo "lovearound: the version is counted from git history; install from a full clone" >&2
-    exit 1
+if [ -z "$VERSION" ]; then
+    # Under sudo the checkout belongs to another user, which git refuses without safe.directory.
+    git() { command git -c safe.directory="$PWD" "$@"; }
+    if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" != false ]; then
+        echo "lovearound: the version is counted from git history; install from a full clone or pass --version" >&2
+        exit 1
+    fi
+    # 0.2.<commit count of this repository>. 0.2 because the 0.1 builds came from
+    # the old shared repository, whose count reached 0.1.92.
+    VERSION="0.2.$(git rev-list --count HEAD)"
 fi
-# 0.2.<commit count of this repository>. 0.2 because the 0.1 builds came from
-# the old shared repository, whose count reached 0.1.92.
-VERSION="0.2.$(git rev-list --count HEAD)"
 
 # Checked before anything is removed. make_icons.py imports lovearound, whose
 # __init__ requires every typelib, so a package build needs them too. The
@@ -138,3 +143,10 @@ cp -r gnome-extension/$EXTENSION "$share/gnome-shell/extensions/"
 mv "$staged" "$lib"
 rm -rf "$lib.old"
 refresh_caches
+
+[ -z "$DESTDIR" ] || exit 0
+echo "Love Around $VERSION installed to $PREFIX"
+case ":$PATH:" in
+    *":$PREFIX/bin:"*) ;;
+    *) echo "Add $PREFIX/bin to PATH for the menu entry, links and autostart to find it." ;;
+esac

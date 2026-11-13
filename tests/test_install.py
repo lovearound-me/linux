@@ -160,3 +160,16 @@ class GetScriptTest(unittest.TestCase):
             self.assertNotEqual(done.returncode, 0)
             self.assertIn("v0.2.4", done.stderr)
             self.assertEqual(files_mentioning(home, "lovearound"), [])
+
+    def test_a_truncated_download_runs_nothing(self):
+        with tempfile.TemporaryDirectory() as home:
+            stub = os.path.join(home, "stub")
+            os.makedirs(stub)
+            with open(os.path.join(stub, "curl"), "w") as f:
+                f.write('#!/bin/sh\ntouch "$HOME/curl-ran"\n')
+            os.chmod(os.path.join(stub, "curl"), 0o755)
+            with open(os.path.join(ROOT, "tools", "get.sh")) as f:
+                script = f.read()
+            subprocess.run(["sh"], input=script[:len(script) * 4 // 5], capture_output=True, text=True,
+                           env=dict(os.environ, HOME=home, PATH=stub + os.pathsep + os.environ["PATH"]))
+            self.assertFalse(os.path.exists(os.path.join(home, "curl-ran")))

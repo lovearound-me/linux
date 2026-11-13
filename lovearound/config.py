@@ -18,7 +18,7 @@ API_BASE = os.environ.get("LOVEAROUND_API", API_BASE)
 FIREBASE_AUTH = os.environ.get("LOVEAROUND_AUTH", "https://identitytoolkit.googleapis.com/v1")
 FIREBASE_TOKEN = os.environ.get("LOVEAROUND_TOKEN", "https://securetoken.googleapis.com/v1/token")
 
-# Written by build.sh; a checkout runs as "dev".
+# Written by install.sh; a checkout runs as "dev".
 VERSION_FILE = os.path.join(os.path.dirname(__file__), "VERSION")
 
 

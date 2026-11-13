@@ -29,4 +29,4 @@ if [ ! -f "$tmp/install.sh" ]; then
   exit 1
 fi
 
-bash "$tmp/install.sh" --user --version "$version"
+bash "$tmp/install.sh" --user --as-version "$version"

@@ -226,3 +226,34 @@ class SignOutTest(unittest.TestCase):
         auth.sign_out()
         auth.sign_out()
         self.assertEqual(store.clears, 1)
+
+
+class SecretStoreSaveTest(unittest.TestCase):
+    def store(self, flag, result):
+        from lovearound.auth import SecretStore
+
+        class FakeSecret:
+            COLLECTION_DEFAULT = "default"
+
+            @staticmethod
+            def password_store_sync(*args):
+                return result
+
+        store = SecretStore.__new__(SecretStore)
+        store.settings = {"keyringSession": flag}
+        store.available = True
+        store.Secret = FakeSecret
+        store.schema = None
+        return store
+
+    def test_a_failed_save_keeps_a_pending_sign_out(self):
+        from lovearound.auth import Session
+        store = self.store("signedOut", False)
+        store.save(Session("uid", "me@example.com", "rt"))
+        self.assertEqual(store.settings["keyringSession"], "signedOut")
+
+    def test_a_save_marks_the_session_stored(self):
+        from lovearound.auth import Session
+        store = self.store("signedOut", True)
+        store.save(Session("uid", "me@example.com", "rt"))
+        self.assertEqual(store.settings["keyringSession"], "stored")

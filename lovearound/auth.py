@@ -138,12 +138,15 @@ class SecretStore:
         if not self.available:
             return
         try:
-            self.Secret.password_store_sync(self.schema, self._attrs(), self.Secret.COLLECTION_DEFAULT,
-                                            "Love Around", json.dumps(asdict(session)), None)
+            stored = self.Secret.password_store_sync(self.schema, self._attrs(), self.Secret.COLLECTION_DEFAULT,
+                                                     "Love Around", json.dumps(asdict(session)), None)
         except Exception:  # noqa: BLE001
             self.available = False
             return
-        self._set_flag("stored")
+        # False is a store that didn't happen: the flag must not claim a session
+        # (a pending sign-out would then load the old one instead of deleting it).
+        if stored:
+            self._set_flag("stored")
 
     def clear(self):
         if not self.available:

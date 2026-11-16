@@ -396,19 +396,20 @@ class HeartDot(Gtk.DrawingArea):
         cr.fill()
 
 
-class InviteRow(Gtk.Button):
-    """The own link as one quiet card, copied on a click."""
+class LinkCard(Gtk.Button):
+    """A Love ID link as one quiet card, copied on a click."""
 
-    def __init__(self, model):
+    def __init__(self, model, url, caption, tooltip):
         super().__init__()
         self.model = model
+        self.url = url
         self.set_relief(Gtk.ReliefStyle.NONE)
         classes(self, "invite")
-        self.set_tooltip_text(tr("Кто добавит тебя по этой ссылке, сможет нажимать, когда думает о тебе"))
+        self.set_tooltip_text(tooltip)
         box = Gtk.Box(spacing=10)
         box.pack_start(HeartDot(28, "link", None), False, False, 0)
-        text = vbox(1, label(tr("Твой Love ID"), "muted", "small"),
-                    label(shown_link(model.invite_url or ""), ellipsize=Pango.EllipsizeMode.MIDDLE))
+        text = vbox(1, label(caption, "muted", "small"),
+                    label(shown_link(url or ""), ellipsize=Pango.EllipsizeMode.MIDDLE))
         box.pack_start(text, True, True, 0)
         self.action = label(tr("Скопировать"), "link", "small")
         box.pack_end(self.action, False, False, 0)
@@ -417,8 +418,9 @@ class InviteRow(Gtk.Button):
         self._reset = None
 
     def _copy(self, _):
-        if not self.model.copy_invite():
+        if not self.url:
             return
+        self.model.set_clipboard(self.url)
         self.action.set_text(tr("Скопировано ✓"))
         if self._reset:
             GLib.source_remove(self._reset)
@@ -427,3 +429,18 @@ class InviteRow(Gtk.Button):
             self._reset = None
             self.action.set_text(tr("Скопировать"))
         self._reset = later(1500, back)
+
+
+class InviteRow(LinkCard):
+    """The own link."""
+
+    def __init__(self, model):
+        super().__init__(model, model.invite_url, tr("Твой Love ID"),
+                         tr("Кто добавит тебя по этой ссылке, сможет нажимать, когда думает о тебе"))
+
+
+class ContactLinkRow(LinkCard):
+    """A contact's link, for passing them on to someone who knows them."""
+
+    def __init__(self, model, contact, name):
+        super().__init__(model, contact.invite_url, tr("Love ID: {name}", name=name), tr("Скопировать ссылку"))

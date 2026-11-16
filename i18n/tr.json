@@ -1,16 +1,29 @@
 {
   " · был онлайн {ago}": " · son çevrimiçi {ago}",
   " · ещё не подключался": " · henüz bağlanmadı",
+  "Love ID: {name}": "Love ID: {name}",
   "{name} не увидит ни имя, ни цвет. Кружки можно переставлять перетаскиванием.": "{name} ne adı ne de rengi görecek. Daireleri sürükleyerek yeniden sıralayabilirsin.",
   "{name} не увидит ни имя, ни цвет: их видишь только ты.": "{name} ne adı ne de rengi görecek: bunları yalnızca sen görürsün.",
   "{name} — улетело ♥": "{name} — gönderildi ♥",
-  "{n} дней назад": {"one": "{n} gün önce", "other": "{n} gün önce"},
+  "{n} дней назад": {
+    "one": "{n} gün önce",
+    "other": "{n} gün önce"
+  },
   "{n} мин": "{n} dk",
-  "{n} минут назад": {"one": "{n} dakika önce", "other": "{n} dakika önce"},
+  "{n} минут назад": {
+    "one": "{n} dakika önce",
+    "other": "{n} dakika önce"
+  },
   "{n} с": "{n} sn",
   "{n} ч": "{n} sa",
-  "{n} часов назад": {"one": "{n} saat önce", "other": "{n} saat önce"},
-  "{n} человек": {"one": "{n} kişi", "other": "{n} kişi"},
+  "{n} часов назад": {
+    "one": "{n} saat önce",
+    "other": "{n} saat önce"
+  },
+  "{n} человек": {
+    "one": "{n} kişi",
+    "other": "{n} kişi"
+  },
   "{pause}. Сигналы не придут.": "{pause}. Sinyal gelmeyecek.",
   "«{name}» подключено": "“{name}” bağlandı",
   "Аккаунт": "Hesap",
@@ -163,6 +176,7 @@
   "Скопировано — вставь в чат": "Kopyalandı — bir sohbete yapıştır",
   "Скопировано ✓": "Kopyalandı ✓",
   "Скопировать": "Kopyala",
+  "Скопировать ссылку": "Bağlantıyı kopyala",
   "Скопировать токен": "Belirteci kopyala",
   "Скопирует ссылку с приглашением, чтобы вставить в чат": "Davet bağlantını bir sohbete yapıştırmak için kopyalar",
   "Слишком много попыток, попробуй через час": "Çok fazla deneme, bir saat sonra tekrar dene",
@@ -175,6 +189,7 @@
   "Сохраняем…": "Kaydediliyor…",
   "Ссылка в порядке. Осталось подписать.": "Bağlantı tamam. Şimdi bir ad ver.",
   "Ссылка-приглашение": "Davet bağlantısı",
+  "Ссылкой делись с теми, кого знает {name}.": "Bağlantıyı {name} kişisinin tanıdığı insanlarla paylaş.",
   "Твой Love ID": "Love ID’n",
   "Тихий звук": "Hafif ses",
   "Тихо, когда что-то на весь экран": "Bir şey tam ekrandayken sessiz",

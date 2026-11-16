@@ -47,6 +47,12 @@ class PersonPage(Gtk.Box):
         self.note = w.note("")
         self.pack_start(self.note, False, False, 0)
 
+        self.share_hint = None
+        if contact.invite_url:
+            name = contact.label
+            self.share_hint = w.note("")
+            self.pack_start(w.vbox(8, w.ContactLinkRow(model, contact, name), self.share_hint), False, False, 0)
+
         self.error = w.label("", "danger", "small", wrap=True)
         self.error.set_no_show_all(True)
         self.pack_end(self._bottom(), False, False, 0)
@@ -84,6 +90,8 @@ class PersonPage(Gtk.Box):
         context.add_class("deep")
         context.add_class("c%d" % self.color)
         self.note.set_text(tr("{name} не увидит ни имя, ни цвет: их видишь только ты.", name=self.label or self.contact.label))
+        if self.share_hint:
+            self.share_hint.set_text(tr("Ссылкой делись с теми, кого знает {name}.", name=self.label or self.contact.label))
 
     def _typed(self, _):
         self._update()

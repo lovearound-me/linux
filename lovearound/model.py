@@ -526,13 +526,6 @@ class AppModel(GObject.Object):
             self.reload()
         return fail
 
-    def copy_invite(self):
-        """For the button of a board that sends to this person (/docs)."""
-        if not self.invite_url:
-            return False
-        self.set_clipboard(self.invite_url)
-        return True
-
     def pasted_invite(self, text):
         """The code of an invite link on the clipboard, unless it is this user's own."""
         code = invite_id(text) if text else None

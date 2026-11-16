@@ -1,16 +1,29 @@
 {
   " · был онлайн {ago}": " · en línea {ago}",
   " · ещё не подключался": " · aún no se ha conectado",
+  "Love ID: {name}": "Love ID: {name}",
   "{name} не увидит ни имя, ни цвет. Кружки можно переставлять перетаскиванием.": "{name} no verá ni el nombre ni el color. Puedes reordenar los círculos arrastrándolos.",
   "{name} не увидит ни имя, ни цвет: их видишь только ты.": "{name} no verá ni el nombre ni el color: solo los ves tú.",
   "{name} — улетело ♥": "{name} — enviado ♥",
-  "{n} дней назад": {"one": "hace {n} día", "other": "hace {n} días"},
+  "{n} дней назад": {
+    "one": "hace {n} día",
+    "other": "hace {n} días"
+  },
   "{n} мин": "{n} min",
-  "{n} минут назад": {"one": "hace {n} minuto", "other": "hace {n} minutos"},
+  "{n} минут назад": {
+    "one": "hace {n} minuto",
+    "other": "hace {n} minutos"
+  },
   "{n} с": "{n} s",
   "{n} ч": "{n} h",
-  "{n} часов назад": {"one": "hace {n} hora", "other": "hace {n} horas"},
-  "{n} человек": {"one": "{n} persona", "other": "{n} personas"},
+  "{n} часов назад": {
+    "one": "hace {n} hora",
+    "other": "hace {n} horas"
+  },
+  "{n} человек": {
+    "one": "{n} persona",
+    "other": "{n} personas"
+  },
   "{pause}. Сигналы не придут.": "{pause}. No llegarán señales.",
   "«{name}» подключено": "«{name}» está conectado",
   "Аккаунт": "Cuenta",
@@ -163,6 +176,7 @@
   "Скопировано — вставь в чат": "Copiado — pégalo en un chat",
   "Скопировано ✓": "Copiado ✓",
   "Скопировать": "Copiar",
+  "Скопировать ссылку": "Copiar enlace",
   "Скопировать токен": "Copiar el token",
   "Скопирует ссылку с приглашением, чтобы вставить в чат": "Copia tu enlace de invitación para pegarlo en un chat",
   "Слишком много попыток, попробуй через час": "Demasiados intentos, inténtalo dentro de una hora",
@@ -175,6 +189,7 @@
   "Сохраняем…": "Guardando…",
   "Ссылка в порядке. Осталось подписать.": "El enlace está bien. Ahora ponle un nombre.",
   "Ссылка-приглашение": "Enlace de invitación",
+  "Ссылкой делись с теми, кого знает {name}.": "Comparte el enlace con quienes conoce {name}.",
   "Твой Love ID": "Tu Love ID",
   "Тихий звук": "Sonido suave",
   "Тихо, когда что-то на весь экран": "Silencio cuando algo está en pantalla completa",

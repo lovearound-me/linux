@@ -1,16 +1,33 @@
 {
   " · был онлайн {ago}": " · online {ago}",
   " · ещё не подключался": " · jeszcze się nie połączyło",
+  "Love ID: {name}": "Love ID: {name}",
   "{name} не увидит ни имя, ни цвет. Кружки можно переставлять перетаскиванием.": "{name} nie zobaczy ani nazwy, ani koloru. Kółka możesz przestawiać, przeciągając je.",
   "{name} не увидит ни имя, ни цвет: их видишь только ты.": "{name} nie zobaczy ani nazwy, ani koloru: widzisz je tylko ty.",
   "{name} — улетело ♥": "{name} — wysłano ♥",
-  "{n} дней назад": {"one": "{n} dzień temu", "few": "{n} dni temu", "many": "{n} dni temu"},
+  "{n} дней назад": {
+    "one": "{n} dzień temu",
+    "few": "{n} dni temu",
+    "many": "{n} dni temu"
+  },
   "{n} мин": "{n} min",
-  "{n} минут назад": {"one": "{n} minutę temu", "few": "{n} minuty temu", "many": "{n} minut temu"},
+  "{n} минут назад": {
+    "one": "{n} minutę temu",
+    "few": "{n} minuty temu",
+    "many": "{n} minut temu"
+  },
   "{n} с": "{n} s",
   "{n} ч": "{n} godz.",
-  "{n} часов назад": {"one": "{n} godzinę temu", "few": "{n} godziny temu", "many": "{n} godzin temu"},
-  "{n} человек": {"one": "{n} osoba", "few": "{n} osoby", "many": "{n} osób"},
+  "{n} часов назад": {
+    "one": "{n} godzinę temu",
+    "few": "{n} godziny temu",
+    "many": "{n} godzin temu"
+  },
+  "{n} человек": {
+    "one": "{n} osoba",
+    "few": "{n} osoby",
+    "many": "{n} osób"
+  },
   "{pause}. Сигналы не придут.": "{pause}. Sygnały nie przyjdą.",
   "«{name}» подключено": "„{name}” połączono",
   "Аккаунт": "Konto",
@@ -163,6 +180,7 @@
   "Скопировано — вставь в чат": "Skopiowano — wklej w czacie",
   "Скопировано ✓": "Skopiowano ✓",
   "Скопировать": "Kopiuj",
+  "Скопировать ссылку": "Kopiuj link",
   "Скопировать токен": "Skopiuj token",
   "Скопирует ссылку с приглашением, чтобы вставить в чат": "Skopiuje link z zaproszeniem do wklejenia w czacie",
   "Слишком много попыток, попробуй через час": "Za dużo prób, spróbuj za godzinę",
@@ -175,6 +193,7 @@
   "Сохраняем…": "Zapisywanie…",
   "Ссылка в порядке. Осталось подписать.": "Link jest w porządku. Zostało go nazwać.",
   "Ссылка-приглашение": "Link z zaproszeniem",
+  "Ссылкой делись с теми, кого знает {name}.": "Udostępniaj link osobom, które zna {name}.",
   "Твой Love ID": "Twój Love ID",
   "Тихий звук": "Cichy dźwięk",
   "Тихо, когда что-то на весь экран": "Cicho, gdy coś jest na pełnym ekranie",

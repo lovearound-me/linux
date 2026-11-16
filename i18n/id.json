@@ -1,16 +1,25 @@
 {
   " · был онлайн {ago}": " · terakhir online {ago}",
   " · ещё не подключался": " · belum pernah terhubung",
+  "Love ID: {name}": "Love ID: {name}",
   "{name} не увидит ни имя, ни цвет. Кружки можно переставлять перетаскиванием.": "{name} tidak akan melihat nama maupun warnanya. Kamu bisa mengatur ulang lingkaran dengan menyeretnya.",
   "{name} не увидит ни имя, ни цвет: их видишь только ты.": "{name} tidak akan melihat nama maupun warnanya: hanya kamu yang melihatnya.",
   "{name} — улетело ♥": "{name} — terkirim ♥",
-  "{n} дней назад": {"other": "{n} hari lalu"},
+  "{n} дней назад": {
+    "other": "{n} hari lalu"
+  },
   "{n} мин": "{n} mnt",
-  "{n} минут назад": {"other": "{n} menit lalu"},
+  "{n} минут назад": {
+    "other": "{n} menit lalu"
+  },
   "{n} с": "{n} dtk",
   "{n} ч": "{n} jam",
-  "{n} часов назад": {"other": "{n} jam lalu"},
-  "{n} человек": {"other": "{n} orang"},
+  "{n} часов назад": {
+    "other": "{n} jam lalu"
+  },
+  "{n} человек": {
+    "other": "{n} orang"
+  },
   "{pause}. Сигналы не придут.": "{pause}. Sinyal tidak akan datang.",
   "«{name}» подключено": "“{name}” terhubung",
   "Аккаунт": "Akun",
@@ -163,6 +172,7 @@
   "Скопировано — вставь в чат": "Tersalin — tempel di obrolan",
   "Скопировано ✓": "Tersalin ✓",
   "Скопировать": "Salin",
+  "Скопировать ссылку": "Salin tautan",
   "Скопировать токен": "Salin token",
   "Скопирует ссылку с приглашением, чтобы вставить в чат": "Menyalin tautan undanganmu untuk ditempel di obrolan",
   "Слишком много попыток, попробуй через час": "Terlalu banyak percobaan, coba lagi dalam satu jam",
@@ -175,6 +185,7 @@
   "Сохраняем…": "Menyimpan…",
   "Ссылка в порядке. Осталось подписать.": "Tautannya sudah benar. Tinggal beri nama.",
   "Ссылка-приглашение": "Tautan undangan",
+  "Ссылкой делись с теми, кого знает {name}.": "Bagikan tautan ke orang yang dikenal {name}.",
   "Твой Love ID": "Love ID-mu",
   "Тихий звук": "Suara lembut",
   "Тихо, когда что-то на весь экран": "Senyap saat ada yang layar penuh",

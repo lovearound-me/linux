@@ -15,10 +15,14 @@ class Contact:
     position: int = 0
     # A close person: a circle on top of the menu, first in the book.
     close: bool = False
+    # The person's Love ID link, to pass on to people who know them; None for
+    # contacts added before the server kept it, or by a wrong code.
+    invite_url: str = None
 
     @classmethod
     def from_json(cls, j):
-        return cls(str(j["id"]), j.get("label") or "", int(j.get("position") or 0), bool(j.get("close")))
+        return cls(str(j["id"]), j.get("label") or "", int(j.get("position") or 0), bool(j.get("close")),
+                   j.get("invite_url") or None)
 
 
 @dataclass

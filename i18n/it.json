@@ -1,16 +1,29 @@
 {
   " · был онлайн {ago}": " · online {ago}",
   " · ещё не подключался": " · non si è ancora connesso",
+  "Love ID: {name}": "Love ID: {name}",
   "{name} не увидит ни имя, ни цвет. Кружки можно переставлять перетаскиванием.": "{name} non vedrà né il nome né il colore. Puoi riordinare i cerchi trascinandoli.",
   "{name} не увидит ни имя, ни цвет: их видишь только ты.": "{name} non vedrà né il nome né il colore: li vedi solo tu.",
   "{name} — улетело ♥": "{name} — inviato ♥",
-  "{n} дней назад": {"one": "{n} giorno fa", "other": "{n} giorni fa"},
+  "{n} дней назад": {
+    "one": "{n} giorno fa",
+    "other": "{n} giorni fa"
+  },
   "{n} мин": "{n} min",
-  "{n} минут назад": {"one": "{n} minuto fa", "other": "{n} minuti fa"},
+  "{n} минут назад": {
+    "one": "{n} minuto fa",
+    "other": "{n} minuti fa"
+  },
   "{n} с": "{n} s",
   "{n} ч": "{n} h",
-  "{n} часов назад": {"one": "{n} ora fa", "other": "{n} ore fa"},
-  "{n} человек": {"one": "{n} persona", "other": "{n} persone"},
+  "{n} часов назад": {
+    "one": "{n} ora fa",
+    "other": "{n} ore fa"
+  },
+  "{n} человек": {
+    "one": "{n} persona",
+    "other": "{n} persone"
+  },
   "{pause}. Сигналы не придут.": "{pause}. Non arriveranno segnali.",
   "«{name}» подключено": "«{name}» è connesso",
   "Аккаунт": "Account",
@@ -163,6 +176,7 @@
   "Скопировано — вставь в чат": "Copiato — incollalo in una chat",
   "Скопировано ✓": "Copiato ✓",
   "Скопировать": "Copia",
+  "Скопировать ссылку": "Copia link",
   "Скопировать токен": "Copia il token",
   "Скопирует ссылку с приглашением, чтобы вставить в чат": "Copia il tuo link di invito da incollare in una chat",
   "Слишком много попыток, попробуй через час": "Troppi tentativi, riprova tra un’ora",
@@ -175,6 +189,7 @@
   "Сохраняем…": "Salvataggio…",
   "Ссылка в порядке. Осталось подписать.": "Il link va bene. Ora dagli un nome.",
   "Ссылка-приглашение": "Link di invito",
+  "Ссылкой делись с теми, кого знает {name}.": "Condividi il link con chi {name} conosce.",
   "Твой Love ID": "Il tuo Love ID",
   "Тихий звук": "Suono leggero",
   "Тихо, когда что-то на весь экран": "Silenzio quando qualcosa è a schermo intero",

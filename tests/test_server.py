@@ -154,6 +154,9 @@ class ServerTest(unittest.TestCase):
             m.start()
             self.assertTrue(until(lambda: m.online and m.contacts))
             self.assertEqual(m.invite_url, "https://lovearound.me/i/GSSV7-A33HN")
+            # Each contact's own link comes along, for passing them on; old ones have none.
+            self.assertEqual(m.contacts[0].invite_url, "https://lovearound.me/i/QK4TR-7ZPMA")
+            self.assertIsNone(next(c for c in m.contacts if c.label == "Серёжа").invite_url)
 
             actions = {k: (lambda: None) for k in ("popup", "book", "add", "updates", "quit", "settings", "toggle")}
             keys = [item.key for item in tray.menu_items(m, actions)]

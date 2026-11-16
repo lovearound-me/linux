@@ -64,6 +64,8 @@ refresh_caches() {
 if [ -n "$UNINSTALL" ]; then
     rm -rf "$lib" "$lib.new" "$lib.old"
     remove_files
+    # The app adds itself to autostart on its first launch; a user install takes that back with it.
+    [ -z "$DATA" ] || rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/$APP_ID.desktop"
     refresh_caches
     exit 0
 fi
@@ -130,11 +132,21 @@ install -m 644 kwin/fullscreen.js "$staged/kwin/"
 remove_files
 mkdir -p "$P/bin" "$share/applications" "$share/metainfo" "$share/gnome-shell/extensions"
 install -m 755 bin/lovearound "$P/bin/$PKG"
-install -m 644 data/$APP_ID.desktop "$share/applications/"
+# The menu entry and lovearound:// links run the launcher by its full path, so
+# ~/.local/bin needn't be on the session's PATH. A path the Exec key would have
+# to quote keeps the bare name (config.launcher does the same for autostart).
+case "$PREFIX/bin/$PKG" in
+    *[!A-Za-z0-9/._+-]*) install -m 644 data/$APP_ID.desktop "$share/applications/" ;;
+    *) sed "s|^Exec=$PKG |Exec=$PREFIX/bin/$PKG |" data/$APP_ID.desktop > "$share/applications/$APP_ID.desktop"
+       chmod 644 "$share/applications/$APP_ID.desktop" ;;
+esac
 install -m 644 data/$APP_ID.metainfo.xml "$share/metainfo/"
 cp -r gnome-extension/$EXTENSION "$share/gnome-shell/extensions/"
 /usr/bin/python3 tools/make_icons.py "$share/icons/hicolor"
 [ ! -d "$lib" ] || mv "$lib" "$lib.old"
 mv "$staged" "$lib"
+# A running app watches VERSION in the directory it started from, now $lib.old:
+# the new version written there tells it to restart into $lib.
+[ ! -f "$lib.old/lovearound/VERSION" ] || cp "$lib/lovearound/VERSION" "$lib.old/lovearound/VERSION"
 rm -rf "$lib.old"
 refresh_caches

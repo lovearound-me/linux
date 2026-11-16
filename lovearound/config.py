@@ -1,4 +1,5 @@
 import os
+import re
 
 # The server (Cloud Run behind api.lovearound.me): REST + WS /v1/stream.
 API_BASE = "https://api.lovearound.me"
@@ -33,6 +34,18 @@ def read_version():
 VERSION = read_version()
 # Sent as X-Client with every request, so the server logs which version sent what.
 CLIENT = "linux/" + VERSION
+
+
+def launcher():
+    """The installed <prefix>/bin/lovearound by its full path, for autostart: the
+    session's PATH may lack ~/.local/bin. A checkout, or a path a .desktop Exec
+    would have to quote, gets the bare name."""
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if os.path.basename(here) == "lovearound" and os.path.basename(os.path.dirname(here)) == "lib":
+        path = os.path.join(os.path.dirname(os.path.dirname(here)), "bin", "lovearound")
+        if os.path.isfile(path) and re.fullmatch(r"[A-Za-z0-9/._+-]+", path):
+            return path
+    return "lovearound"
 
 
 def config_dir():

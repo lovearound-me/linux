@@ -30,6 +30,12 @@ class KWinScriptTest(unittest.TestCase):
         self.assertEqual(presenting.kwin_script_path(), os.path.join(ROOT, "kwin", "fullscreen.js"))
 
 
+class LauncherPathTest(unittest.TestCase):
+    def test_a_checkout_autostarts_by_name(self):
+        from lovearound import config
+        self.assertEqual(config.launcher(), "lovearound")
+
+
 def run_install(*args, tree=ROOT, cwd=None, **env):
     return subprocess.run(["bash", os.path.join(tree, "install.sh"), *args],
                           capture_output=True, text=True, cwd=cwd, env=dict(os.environ, **env))
@@ -55,7 +61,8 @@ def files_mentioning(root, word):
 class InstallScriptTest(unittest.TestCase):
     def test_user_install_and_uninstall(self):
         with tempfile.TemporaryDirectory() as home:
-            env = {"HOME": home, "XDG_DATA_HOME": os.path.join(home, "data")}
+            env = {"HOME": home, "XDG_DATA_HOME": os.path.join(home, "data"),
+                   "XDG_CONFIG_HOME": os.path.join(home, "config")}
             done = run_install("--user", **env)
             self.assertEqual(done.returncode, 0, done.stderr)
             local, data = os.path.join(home, ".local"), os.path.join(home, "data")
@@ -66,6 +73,13 @@ class InstallScriptTest(unittest.TestCase):
                          "icons/hicolor/48x48/apps/me.lovearound.LoveAround.png"):
                 self.assertTrue(os.path.exists(os.path.join(data, path)), path)
             self.assertTrue(os.access(os.path.join(local, "bin", "lovearound"), os.X_OK))
+            with open(os.path.join(data, "applications", "me.lovearound.LoveAround.desktop")) as f:
+                self.assertIn("\nExec=%s/bin/lovearound %%u\n" % local, f.read())
+            launcher = subprocess.run(
+                [sys.executable, "-c", "from lovearound import config; print(config.launcher())"],
+                capture_output=True, text=True, cwd=home,
+                env=dict(os.environ, PYTHONPATH=os.path.join(local, "lib", "lovearound")))
+            self.assertEqual(launcher.stdout.strip(), os.path.join(local, "bin", "lovearound"), launcher.stderr)
             kwin = subprocess.run(
                 [sys.executable, "-c", "from lovearound import presenting; print(presenting.kwin_script_path())"],
                 capture_output=True, text=True, cwd=home,
@@ -82,6 +96,11 @@ class InstallScriptTest(unittest.TestCase):
 
             again = run_install("--user", **env)
             self.assertEqual(again.returncode, 0, again.stderr)
+            # What the app writes on its first launch.
+            autostart = os.path.join(home, "config", "autostart", "me.lovearound.LoveAround.desktop")
+            os.makedirs(os.path.dirname(autostart))
+            with open(autostart, "w") as f:
+                f.write("[Desktop Entry]\nExec=%s/bin/lovearound --background\nIcon=me.lovearound.LoveAround\n" % local)
             gone = run_install("--user", "--uninstall", **env)
             self.assertEqual(gone.returncode, 0, gone.stderr)
             shutil.rmtree(fake)

@@ -197,13 +197,13 @@ It stops before touching an earlier install when a Python module or typelib the
 app needs is missing (`lovearound/deps.py`), and names them all; it installs no
 packages. libsecret, gtk-layer-shell and gsound are optional: without them the
 sign-in is kept only until the app quits, KDE and wlroots on Wayland get a
-notification instead of the glow, and signals make no sound. `--user`
-needs `~/.local/bin` on the session's PATH for the menu entry, the
-`lovearound://` links and autostart: fish on CachyOS adds it, plain Arch does
-not. A package for another distro runs
+notification instead of the glow, and signals make no sound. The menu entry,
+the `lovearound://` links and autostart run the launcher by its full path, so
+they work without `~/.local/bin` on PATH. `--uninstall` also takes the app out
+of autostart. A package for another distro runs
 `./install.sh --prefix /usr --destdir <staging>`, as `build.sh` does. Nothing
-updates such an install: run `install.sh` again after a `git pull`, then quit
-the app and start it again.
+updates such an install: run `install.sh` again after a `git pull`, and a
+running app restarts itself into the new version, as it does after apt.
 
 ## Updates
 

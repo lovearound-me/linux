@@ -187,3 +187,73 @@ class TrayRegistrationTest(unittest.TestCase):
             context.iteration(False)
             time.sleep(0.01)
         self.assertEqual(c.calls, ["RegisterStatusNotifierItem"])
+
+
+class KeyringPlanTest(unittest.TestCase):
+    def test_signed_out_never_prompts(self):
+        from lovearound.auth import load_plan
+        self.assertEqual(load_plan("none", locked=True), "skip")
+        self.assertEqual(load_plan("signedOut", locked=True), "skip")
+
+    def test_a_stored_or_unknown_session_unlocks(self):
+        from lovearound.auth import load_plan
+        self.assertEqual(load_plan("stored", locked=True), "unlock")
+        self.assertEqual(load_plan(None, locked=True), "unlock")
+
+    def test_a_pending_sign_out_deletes_instead_of_loading(self):
+        from lovearound.auth import load_plan
+        self.assertEqual(load_plan("signedOut", locked=False), "delete")
+
+    def test_an_unlocked_keyring_is_looked_up(self):
+        from lovearound.auth import load_plan
+        for flag in (None, "none", "stored"):
+            self.assertEqual(load_plan(flag, locked=False), "lookup")
+
+
+class SignOutTest(unittest.TestCase):
+    def test_signing_out_twice_clears_the_store_once(self):
+        from lovearound.auth import Auth, MemoryStore, Session
+
+        class CountingStore(MemoryStore):
+            clears = 0
+
+            def clear(self):
+                self.clears += 1
+                super().clear()
+
+        store = CountingStore(Session("uid", "me@example.com", "rt"))
+        auth = Auth(store)
+        auth.sign_out()
+        auth.sign_out()
+        self.assertEqual(store.clears, 1)
+
+
+class SecretStoreSaveTest(unittest.TestCase):
+    def store(self, flag, result):
+        from lovearound.auth import SecretStore
+
+        class FakeSecret:
+            COLLECTION_DEFAULT = "default"
+
+            @staticmethod
+            def password_store_sync(*args):
+                return result
+
+        store = SecretStore.__new__(SecretStore)
+        store.settings = {"keyringSession": flag}
+        store.available = True
+        store.Secret = FakeSecret
+        store.schema = None
+        return store
+
+    def test_a_failed_save_keeps_a_pending_sign_out(self):
+        from lovearound.auth import Session
+        store = self.store("signedOut", False)
+        store.save(Session("uid", "me@example.com", "rt"))
+        self.assertEqual(store.settings["keyringSession"], "signedOut")
+
+    def test_a_save_marks_the_session_stored(self):
+        from lovearound.auth import Session
+        store = self.store("signedOut", True)
+        store.save(Session("uid", "me@example.com", "rt"))
+        self.assertEqual(store.settings["keyringSession"], "stored")

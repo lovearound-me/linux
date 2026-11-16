@@ -21,6 +21,8 @@ DEFAULTS = {
     "autostartAdded": False,
     "reloginNoticeShown": False,
     "language": "",
+    # auth.load_plan's flag; None is an install from before the flag existed.
+    "keyringSession": None,
 }
 
 
@@ -38,6 +40,9 @@ class Settings:
 
     def __getitem__(self, key):
         return self.values[key]
+
+    def get(self, key, default=None):
+        return self.values.get(key, default)
 
     def __setitem__(self, key, value):
         self.values[key] = value

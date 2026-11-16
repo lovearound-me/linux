@@ -75,7 +75,7 @@ Wayland only notices extensions installed after login at the next login.
 Until then (or if the user turns it off in Extensions) a signal arrives as a
 notification, and Settings → Сигнал says why, with a "Включить" button when
 it can help. Extensions are code inside the Shell: each GNOME release may
-need a `shell-version` bump in `metadata.json` (now 45–49; tested on 46) and a test. Not
+need a `shell-version` bump in `metadata.json` (now 45–51; tested on 46 and 51) and a test. Not
 on extensions.gnome.org; it's a system extension.
 
 ## License

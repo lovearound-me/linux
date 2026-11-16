@@ -70,7 +70,8 @@ class InstallScriptTest(unittest.TestCase):
             local, data = os.path.join(home, ".local"), os.path.join(home, "data")
             self.assertIn("installed to " + local, done.stdout)
             self.assertIn("Add %s/bin to PATH" % local, done.stdout)
-            for path in ("bin/lovearound", "lib/lovearound/lovearound/app.py", "lib/lovearound/lovearound/VERSION"):
+            for path in ("bin/lovearound", "lib/lovearound/lovearound/app.py", "lib/lovearound/lovearound/VERSION",
+                         "lib/lovearound/get.sh"):
                 self.assertTrue(os.path.exists(os.path.join(local, path)), path)
             for path in ("applications/me.lovearound.LoveAround.desktop",
                          "gnome-shell/extensions/lovearound@lovearound.me/metadata.json",
@@ -112,6 +113,19 @@ class InstallScriptTest(unittest.TestCase):
             shutil.rmtree(fake)
             self.assertEqual(files_mentioning(home, "lovearound"), [])
 
+    def test_only_a_user_install_or_a_package_stage_is_accepted(self):
+        with tempfile.TemporaryDirectory() as home, tempfile.TemporaryDirectory() as prefix:
+            env = {"HOME": home, "XDG_DATA_HOME": os.path.join(home, "data")}
+            stage = os.path.join(prefix, "stage")
+            for args in ((), ("--prefix", prefix), ("--destdir", stage), ("--user", "--destdir", stage),
+                         ("--user", "--prefix", prefix), ("--prefix", prefix, "--destdir", stage, "--user"),
+                         ("--prefix", prefix, "--destdir", stage, "--uninstall")):
+                done = run_install(*args, **env)
+                self.assertEqual(done.returncode, 2, args)
+                self.assertIn("--user", done.stderr)
+            self.assertEqual(files_mentioning(home, "lovearound"), [])
+            self.assertEqual(os.listdir(prefix), [])
+
     def assert_refused(self, tree, home):
         done = run_install("--user", tree=tree, HOME=home, XDG_DATA_HOME=os.path.join(home, "data"))
         self.assertNotEqual(done.returncode, 0)
@@ -144,6 +158,8 @@ class InstallScriptTest(unittest.TestCase):
                 done = run_install("--prefix", "/usr", "--destdir", "stage-under-test", cwd=work)
                 self.assertEqual(done.returncode, 0, done.stderr)
                 self.assertTrue(os.path.exists(os.path.join(work, "stage-under-test", "usr", "bin", "lovearound")))
+                self.assertFalse(os.path.exists(os.path.join(work, "stage-under-test", "usr", "lib", "lovearound",
+                                                             "get.sh")))
             finally:
                 shutil.rmtree(os.path.join(ROOT, "stage-under-test"), ignore_errors=True)
 

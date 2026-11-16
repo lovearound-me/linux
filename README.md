@@ -129,7 +129,7 @@ The window hides on Escape and on losing focus, like a menu.
 | `data/` | `.desktop` (`x-scheme-handler/lovearound` and the old `…/needed`), AppStream metainfo |
 | `tools/make_icons.py` | hicolor PNGs from `icons.app_icon` |
 | `tools/get.sh` | the one-line install of the latest release |
-| `install.sh` | where the app's installed files go, for any prefix; `build.sh` packs its `/usr` tree into the `.deb` with the doc and APT files |
+| `install.sh` | where the app's installed files go, for a `--user` install or a package's staging tree; `build.sh` packs its `/usr` tree into the `.deb` with the doc and APT files |
 | `tests/` | unit tests, `fake_server.py` (Firebase Auth + the server on localhost) |
 
 ## Sign-in
@@ -198,7 +198,6 @@ It downloads the release's source archive from GitHub and runs `install.sh
 
 ```sh
 ./install.sh --user                     # into ~/.local, no root
-sudo ./install.sh                       # into /usr/local
 ./install.sh --user --uninstall
 ```
 

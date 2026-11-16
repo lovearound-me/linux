@@ -160,5 +160,5 @@ refresh_caches
 echo "Love Around $VERSION installed to $PREFIX"
 case ":$PATH:" in
     *":$PREFIX/bin:"*) ;;
-    *) echo "Add $PREFIX/bin to PATH for the menu entry, links and autostart to find it." ;;
+    *) echo "Add $PREFIX/bin to PATH to run lovearound from a terminal; the menu entry and autostart work without it." ;;
 esac

@@ -3,13 +3,10 @@ import json
 import time
 import urllib.parse
 
-import gi
+from gi.repository import Gio, GLib, Soup
 
-gi.require_version("Soup", "3.0")
-from gi.repository import Gio, GLib, Soup  # noqa: E402
-
-from . import config, tasks  # noqa: E402
-from .auth import AuthError  # noqa: E402
+from . import config, tasks
+from .auth import AuthError
 
 PING = 30
 # A socket can die without an error (Wi-Fi gone, a router dropped it): TCP

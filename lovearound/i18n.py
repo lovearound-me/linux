@@ -19,7 +19,7 @@ CODES = tuple(code for code, _ in LANGUAGES)
 FALLBACK = "en"
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-# The package carries a copy (build.sh); a checkout reads the repository's.
+# The package carries a copy (install.sh); a checkout reads the repository's.
 _DIRS = (os.path.join(_HERE, "i18n"), os.path.join(_HERE, "..", "i18n"))
 
 _lang = FALLBACK

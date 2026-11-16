@@ -5,31 +5,13 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# 0.2.<commit count of this repository>. 0.2 because the 0.1 builds came from
-# the old shared repository, whose count reached 0.1.92.
-BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 0)"
-VERSION="0.2.$BUILD"
 PKG=lovearound
 OUT=dist
 ROOT="$OUT/root"
 rm -rf "$ROOT"
-mkdir -p "$ROOT/DEBIAN"
-
-lib="$ROOT/usr/lib/$PKG"
-mkdir -p "$lib" "$ROOT/usr/bin" "$ROOT/usr/share/applications" "$ROOT/usr/share/metainfo" \
-    "$ROOT/usr/share/$PKG/kwin" "$ROOT/usr/share/gnome-shell/extensions" "$ROOT/usr/share/doc/$PKG"
-# The code, without caches; VERSION is what the running app watches for an upgrade.
-tar --exclude=__pycache__ -cf - lovearound | tar -xf - -C "$lib"
-echo "$VERSION" > "$lib/lovearound/VERSION"
-# The dictionaries (i18n.py).
-mkdir -p "$lib/lovearound/i18n"
-cp i18n/*.json "$lib/lovearound/i18n/"
-install -m 755 bin/lovearound "$ROOT/usr/bin/lovearound"
-install -m 644 data/me.lovearound.LoveAround.desktop "$ROOT/usr/share/applications/"
-install -m 644 data/me.lovearound.LoveAround.metainfo.xml "$ROOT/usr/share/metainfo/"
-install -m 644 kwin/fullscreen.js "$ROOT/usr/share/$PKG/kwin/"
-cp -r gnome-extension/lovearound@lovearound.me "$ROOT/usr/share/gnome-shell/extensions/"
-python3 tools/make_icons.py "$ROOT/usr/share/icons/hicolor"
+./install.sh --prefix /usr --destdir "$ROOT"
+VERSION="$(cat "$ROOT/usr/lib/$PKG/lovearound/VERSION")"
+mkdir -p "$ROOT/DEBIAN" "$ROOT/usr/share/doc/$PKG"
 # The APT repository at lovearound.me/apt (tools/make_repo.sh), so apt and the
 # desktop's updater update the package once it is installed from a download.
 # The source is a plain file, not a conffile: removing the package must take it
@@ -68,7 +50,7 @@ COPY
 gzip -9n -c > "$ROOT/usr/share/doc/$PKG/changelog.gz" <<LOG
 $PKG ($VERSION) stable; urgency=low
 
-  * Build $BUILD.
+  * Build ${VERSION##*.}.
 
  -- Love Around <hello@lovearound.me>  $(date -R)
 LOG

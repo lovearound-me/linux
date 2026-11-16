@@ -15,13 +15,10 @@ import time
 
 import cairo
 import gi
+from gi.repository import Gdk, Gio, GLib, Gtk
 
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
-
-from . import effect  # noqa: E402
-from .i18n import tr  # noqa: E402
+from . import effect
+from .i18n import tr
 
 try:
     gi.require_version("GtkLayerShell", "0.1")

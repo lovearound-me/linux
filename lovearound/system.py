@@ -32,7 +32,7 @@ AUTOSTART = """[Desktop Entry]
 Type=Application
 Name=Love Around
 Comment=A signal from those who think of you
-Exec=lovearound --background
+Exec={launcher} --background
 Icon=me.lovearound.LoveAround
 X-GNOME-Autostart-enabled=true
 X-GNOME-Autostart-Delay=3
@@ -81,7 +81,7 @@ class System:
             if on:
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 with open(path, "w") as f:
-                    f.write(AUTOSTART)
+                    f.write(AUTOSTART.format(launcher=config.launcher()))
             elif os.path.exists(path):
                 os.remove(path)
             return True
@@ -159,7 +159,7 @@ class System:
 
     @staticmethod
     def extension_installed(uuid):
-        """On disk, where GNOME Shell looks at login (the package puts ours in /usr/share)."""
+        """On disk, where GNOME Shell looks at login."""
         dirs = [GLib.get_user_data_dir()] + list(GLib.get_system_data_dirs())
         return any(os.path.isfile(os.path.join(d, "gnome-shell", "extensions", uuid, "metadata.json")) for d in dirs)
 

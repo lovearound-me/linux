@@ -1,8 +1,10 @@
 #!/usr/bin/python3
-"""Love Around: the launcher /usr/bin/lovearound, and the .desktop's Exec."""
+"""Love Around: the launcher <prefix>/bin/lovearound, and the .desktop's Exec."""
+import os
 import sys
 
-sys.path.insert(0, "/usr/lib/lovearound")
+# The prefix is chosen at install time.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "lib", "lovearound"))
 
 from lovearound.app import main  # noqa: E402
 

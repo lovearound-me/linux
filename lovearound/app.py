@@ -76,6 +76,7 @@ class App(Gtk.Application):
                 "settings": self.show_settings,
                 "add": self.show_add,
                 "updates": self.check_updates,
+                "update": self.install_update,
                 "quit": self.quit_app,
             })
             self.tray.on_watcher = self._tray_changed
@@ -245,9 +246,16 @@ class App(Gtk.Application):
 
     # ---- updates ----------------------------------------------------------------------
 
+    def install_update(self):
+        """The tray's "Обновить до …": Settings shows how it goes, and the app restarts back into it."""
+        self.show_settings("account")
+        self.updater.install()
+
     def _update_changed(self):
         if self.settings_window:
             self.settings_window.refresh_update()
+        if self.tray:
+            self.tray.set_update(self.updater.state, self.updater.version)
 
     def _updated(self):
         """The user asked for this release, so it is not held back until nobody is looking."""

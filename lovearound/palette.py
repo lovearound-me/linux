@@ -32,6 +32,8 @@ ALL = [
 ]
 
 STAR = 0xF2C46B
+# The update mark on the tray heart and in its menu.
+UPDATE = 0x3E9A5E
 DARK_PAPER = 0x2A211D
 
 

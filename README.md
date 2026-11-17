@@ -247,8 +247,10 @@ running app watches its own `VERSION` file: when apt replaces it, the app
 restarts itself into the new version as soon as no window of it is open.
 
 A user install keeps its release's `get.sh` beside the code, and the app
-updates itself with it: it offers a new release in Settings → Account, where
-"Проверить обновления…" also leads, and nothing installs without the click.
+updates itself with it: a new release puts a green download arrow on the tray heart and
+"Обновить до X" in place of "Проверить обновления…" at the bottom of its menu,
+and is offered in Settings → Account, where "Проверить обновления…" also leads.
+Nothing installs without a click on one of them.
 An installed `get.sh` runs the `install.sh` of whatever release it fetches, so
 each release's `install.sh` has to keep accepting what earlier `get.sh`
 versions pass it.

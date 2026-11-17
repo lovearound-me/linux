@@ -104,6 +104,9 @@ MENU_XML = """
 </node>"""
 
 ICON_SIZES = (16, 22, 24, 32, 48, 64)
+# Updater states in which a release waits for the user's click, and in which it is going in.
+UPDATE_OFFERED = ("available", "install-failed")
+UPDATE_MARKED = UPDATE_OFFERED + ("installing",)
 
 
 class Item:
@@ -130,8 +133,9 @@ class Item:
         return props
 
 
-def menu_items(model, actions):
-    """What the heart's menu shows; `actions` are the app's own (open popup, book…)."""
+def menu_items(model, actions, update=None):
+    """What the heart's menu shows; `actions` are the app's own (open popup, book…);
+    `update` is the updater's (state, version) on an install that updates itself."""
     items = []
     if not model.signed_in:
         items.append(Item("signin", tr("Войти…"), actions["popup"]))
@@ -176,14 +180,21 @@ def menu_items(model, actions):
         items.append(Item("book", tr("Книга…"), actions["book"]))
         items.append(Item("settings", tr("Настройки…"), actions["settings"]))
     items.append(Item("sep-app", separator=True))
-    items.append(Item("updates", tr("Проверить обновления…"), actions["updates"]))
+    state, version = update or (None, None)
+    if state in UPDATE_OFFERED:
+        items.append(Item("update", tr("Обновить до {version}", version=version), actions["update"],
+                          icon=icons.update_png()))
+    elif state == "installing":
+        items.append(Item("update", tr("Обновляю…"), enabled=False, icon=icons.update_png()))
+    else:
+        items.append(Item("updates", tr("Проверить обновления…"), actions["updates"]))
     items.append(Item("quit", tr("Закрыть приложение"), actions["quit"]))
     return items
 
 
 class Tray:
     def __init__(self, model, actions):
-        """actions: toggle(x, y), popup(), book(), settings(), add(), updates(), quit()."""
+        """actions: toggle(x, y), popup(), book(), settings(), add(), updates(), update(), quit()."""
         self.model = model
         self.actions = actions
         self.connection = None
@@ -202,6 +213,7 @@ class Tray:
         self.watcher_seen = False
         self.on_watcher = lambda present: None
         self.pixmaps = None
+        self.update = None
 
     def start(self, connection):
         self.connection = connection
@@ -253,7 +265,12 @@ class Tray:
     # ---- the item ------------------------------------------------------------
 
     def _sni_get(self, connection, sender, path, iface, prop):
-        tooltip = self.model.pause_text() if self.model.is_paused else ""
+        if self.model.is_paused:
+            tooltip = self.model.pause_text()
+        elif self.update and self.update[0] in UPDATE_OFFERED:
+            tooltip = tr("Доступна версия {version}", version=self.update[1])
+        else:
+            tooltip = ""
         values = {
             "Category": GLib.Variant("s", "ApplicationStatus"),
             "Id": GLib.Variant("s", "lovearound"),
@@ -274,7 +291,9 @@ class Tray:
     def _pixmaps(self):
         if self.pixmaps is None:
             paused = self.model.is_paused and self.tint is None
-            self.pixmaps = [(px, px, icons.argb_bytes(icons.tray_surface(px, self.tint, paused))) for px in ICON_SIZES]
+            marked = self.update is not None and self.update[0] in UPDATE_MARKED
+            self.pixmaps = [(px, px, icons.argb_bytes(icons.tray_surface(px, self.tint, paused, marked)))
+                            for px in ICON_SIZES]
         return self.pixmaps
 
     def _sni_call(self, connection, sender, path, iface, method, params, invocation):
@@ -294,6 +313,12 @@ class Tray:
         self.pixmaps = None
         self._emit(ITEM_PATH, "org.kde.StatusNotifierItem", "NewIcon")
         self._emit(ITEM_PATH, "org.kde.StatusNotifierItem", "NewToolTip")
+
+    def set_update(self, state, version):
+        """The updater's state: a release to install marks the heart and the menu's last items."""
+        self.update = (state, version)
+        self.update_icon()
+        self.schedule_rebuild()
 
     def flash(self, color):
         """The icon briefly takes the signal color when a signal arrives."""
@@ -323,7 +348,7 @@ class Tray:
 
     def _build(self):
         self.revision += 1
-        self.root = menu_items(self.model, self.actions)
+        self.root = menu_items(self.model, self.actions, self.update)
         self.items = {}
 
         def index(items):

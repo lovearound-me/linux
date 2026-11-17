@@ -2,6 +2,7 @@
 import datetime
 import random
 import time
+import types
 import unittest
 
 import cairo
@@ -110,6 +111,13 @@ class IconsTest(unittest.TestCase):
             self.assertEqual(icons.tray_surface(px).get_width(), px)
         self.assertTrue(icons.dot_png(palette.at(0), "М").startswith(b"\x89PNG"))
         self.assertTrue(icons.star_png(on=False).startswith(b"\x89PNG"))
+        self.assertTrue(icons.update_png().startswith(b"\x89PNG"))
+        for px in (16, 22, 64):
+            plain, marked = (icons.argb_bytes(icons.tray_surface(px, update=u)) for u in (False, True))
+            self.assertNotEqual(plain, marked)
+            # The mark sits in the lower right corner and leaves the top of the heart alone.
+            top = px * 4 * int(px * 0.4)
+            self.assertEqual(plain[:top], marked[:top])
         self.assertEqual(icons.app_icon(64).get_width(), 64)
 
 
@@ -153,6 +161,30 @@ class SignInBoxTest(unittest.TestCase):
         self.assertEqual(len(key.public), 87)
         sealed = signinbox.seal(key.public, "S", {"uid": "u", "rt": "r"})
         self.assertEqual(key.open(sealed["epk"], sealed["box"], "S"), {"uid": "u", "rt": "r"})
+
+
+class TrayUpdateTest(unittest.TestCase):
+    """A release to install shows at the bottom of the heart's menu, signed in or out."""
+
+    def items(self, update):
+        from lovearound import tray
+        actions = {k: (lambda: None) for k in ("popup", "updates", "update", "quit")}
+        return {i.key: i for i in tray.menu_items(types.SimpleNamespace(signed_in=False), actions, update)}
+
+    def test_the_menu_offers_a_release_in_place_of_the_check(self):
+        for update in (None, ("idle", None), ("checking", None), ("latest", None), ("check-failed", None)):
+            items = self.items(update)
+            self.assertIn("updates", items, update)
+            self.assertNotIn("update", items, update)
+        for state in ("available", "install-failed"):
+            items = self.items((state, "0.2.11"))
+            self.assertNotIn("updates", items)
+            self.assertEqual(items["update"].label, "Обновить до 0.2.11")
+            self.assertTrue(items["update"].enabled)
+            self.assertTrue(items["update"].icon)
+        installing = self.items(("installing", "0.2.11"))["update"]
+        self.assertEqual(installing.label, "Обновляю…")
+        self.assertFalse(installing.enabled)
 
 
 class TrayRegistrationTest(unittest.TestCase):

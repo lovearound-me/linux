@@ -18,8 +18,39 @@ def heart_path(cr, cx, cy, size):
     cr.close_path()
 
 
-def tray_surface(px, color=None, paused=False):
-    """Pink by default, the signal color for a moment, grey and crossed out on pause."""
+def update_mark(cr, cx, cy, r):
+    """A new release to install: a white arrow down onto a line, "download", in a green circle."""
+    cr.arc(cx, cy, r, 0, 2 * math.pi)
+    cr.set_source_rgb(*palette.rgb(palette.UPDATE))
+    cr.fill()
+    a = r * 0.55
+    cr.set_source_rgb(1, 1, 1)
+    cr.set_line_width(max(1.2, r * 0.29))
+    cr.set_line_cap(cairo.LINE_CAP_ROUND)
+    cr.set_line_join(cairo.LINE_JOIN_ROUND)
+    cr.move_to(cx, cy - a)
+    cr.line_to(cx, cy + a * 0.35)
+    cr.stroke()
+    cr.move_to(cx - a * 0.6, cy - a * 0.2)
+    cr.line_to(cx, cy + a * 0.4)
+    cr.line_to(cx + a * 0.6, cy - a * 0.2)
+    cr.stroke()
+    cr.move_to(cx - a * 0.75, cy + a * 0.95)
+    cr.line_to(cx + a * 0.75, cy + a * 0.95)
+    cr.stroke()
+
+
+def update_png(px=32):
+    """The update mark alone, for the menu's "Обновить до …"."""
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, px, px)
+    update_mark(cairo.Context(surface), px / 2, px / 2, px / 2 - 1)
+    surface.flush()
+    return png_bytes(surface)
+
+
+def tray_surface(px, color=None, paused=False, update=False):
+    """Pink by default, the signal color for a moment, grey and crossed out on pause;
+    `update` puts the update mark on its lower right corner."""
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, px, px)
     cr = cairo.Context(surface)
     fill = 0x9C8F88 if paused else (color if color is not None else 0xE0596B)
@@ -37,6 +68,14 @@ def tray_surface(px, color=None, paused=False):
         cr.move_to(px * 0.2, px * 0.2)
         cr.line_to(px * 0.8, px * 0.8)
         cr.stroke()
+    if update:
+        r = px * 0.25
+        c = px - r - px * 0.01
+        # A light ring keeps the mark apart from the heart, whatever its color.
+        cr.arc(c, c, r + max(1.0, px / 22), 0, 2 * math.pi)
+        cr.set_source_rgba(1, 1, 1, 0.9)
+        cr.fill()
+        update_mark(cr, c, c, r)
     surface.flush()
     return surface
 

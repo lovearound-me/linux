@@ -16,8 +16,9 @@
 # (data/lovearound.sources), so apt and the desktop's updater update it.
 #
 # Signed with the private key in $APT_SIGNING_KEY (ASCII-armored, no
-# passphrase; GitHub secret APT_SIGNING_KEY) or, if that is unset, in the file
-# $APT_SIGNING_KEY_FILE (default ~/.config/lovearound/apt_signing_key.asc).
+# passphrase): the release workflow passes its GitHub secret. The key is kept
+# nowhere else but the owner's password manager, never in a file on a dev
+# machine; here it goes only into a keyring in the temporary directory.
 # Its public half is data/lovearound.gpg; the two must match, or every
 # installed app stops getting updates.
 #
@@ -32,13 +33,8 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 export GNUPGHOME="$WORK/gnupg"
 mkdir -m 700 "$GNUPGHOME"
-if [[ -n "${APT_SIGNING_KEY:-}" ]]; then
-  printf '%s\n' "$APT_SIGNING_KEY" | gpg --batch --quiet --import
-else
-  KEY="${APT_SIGNING_KEY_FILE:-$HOME/.config/lovearound/apt_signing_key.asc}"
-  [[ -f "$KEY" ]] || { echo ">> no APT_SIGNING_KEY and no $KEY"; exit 1; }
-  gpg --batch --quiet --import "$KEY"
-fi
+[[ -n "${APT_SIGNING_KEY:-}" ]] || { echo ">> no APT_SIGNING_KEY: releases are signed in the GitHub workflow"; exit 1; }
+printf '%s\n' "$APT_SIGNING_KEY" | gpg --batch --quiet --import
 FPR="$(gpg --batch --with-colons --list-secret-keys | awk -F: '/^fpr/ { print $10; exit }')"
 gpg --batch --quiet --import data/lovearound.gpg
 SHIPPED="$(gpg --batch --with-colons --show-keys data/lovearound.gpg | awk -F: '/^fpr/ { print $10; exit }')"

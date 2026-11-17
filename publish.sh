@@ -8,8 +8,9 @@
 # The release also carries the signed index of the APT repository
 # lovearound.me/apt (tools/make_repo.sh), which firebase.json redirects to the
 # latest release; so the installed apps see a version only once it is
-# released. Signing needs the key: APT_SIGNING_KEY (in CI, the GitHub secret)
-# or the file ~/.config/lovearound/apt_signing_key.asc.
+# released. Signing needs the key in APT_SIGNING_KEY, which only the release
+# workflow has (its GitHub secret; the other copy is in the owner's password
+# manager), so releases go through the workflow.
 #
 # Needs gh, logged in with write access to the repository; the release is
 # tagged at HEAD, so push first.

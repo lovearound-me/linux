@@ -167,13 +167,13 @@ python3 -m lovearound           # a checkout runs as version "dev"
 python3 -m unittest discover -s tests -t .
 ./build.sh                      # → dist/lovearound_0.2.<N>_all.deb
 sudo apt install ./dist/lovearound_0.2.<N>_all.deb
-./publish.sh                    # the newest dist/*.deb → a GitHub release
+./publish.sh                    # the newest dist/*.deb → a GitHub release (the key: only in CI)
 ```
 
 `N` is the commit count of this repository (0.1.x came from the old shared
 one). `publish.sh` makes it the GitHub release `v0.2.N`, as
 `lovearound_0.2.N_all.deb` and `LoveAround.deb`; lovearound.me/download/LoveAround.deb
-redirects to the latest one. Normally a release is **Actions → Release → Run workflow** (or
+redirects to the latest one. A release is **Actions → Release → Run workflow** (or
 `gh workflow run release -R lovearound-me/linux`): tests, `build.sh` and
 `publish.sh` on a GitHub runner. `build.sh` needs only `dpkg-deb`
 (and runs `lintian` when it's there). No Flatpak: the sandbox can't install
@@ -232,9 +232,10 @@ The repository has no files of its own: each release carries its signed index
 and `/apt/pool/<version>/<deb>` to the release `v<version>`. So an installed
 app sees a version exactly when it is released. The index is signed in CI with
 the GitHub secret `APT_SIGNING_KEY` (ed25519, fingerprint
-`5B173A2F669393134B8246555B80ECCCD83D2840`, no passphrase); a local
-`publish.sh` reads `~/.config/lovearound/apt_signing_key.asc`. Lose that key
-and the installed apps never get another update: keep a copy elsewhere.
+`5B173A2F669393134B8246555B80ECCCD83D2840`, no passphrase). The private key
+is only in that secret and in the owner's password manager, never in a file
+on a dev machine, so releases go through the workflow. Lose it and the
+installed apps never get another update.
 
 By hand, for anyone who wants the repository without the download:
 

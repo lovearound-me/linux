@@ -5,14 +5,27 @@
 # tag's source archive.
 set -eu
 
+usage() {
+  echo "usage: get.sh [--latest | --version X.Y.Z]" >&2
+  exit 2
+}
+
 # A truncated download must run nothing, so main is called only on the last line.
 main() {
   repo="lovearound-me/linux"
+  tag=
+  print=
+  case "$#:${1:-}" in
+    0:) ;;
+    1:--latest) print=1 ;;
+    2:--version) tag="v$2" ;;
+    *) usage ;;
+  esac
 
-  command -v bash >/dev/null 2>&1 || { echo "get.sh: bash is required" >&2; exit 1; }
-
-  # The API is rate-limited without a token; the latest-release redirect is not.
-  tag=$(curl -fsSI -o /dev/null -w '%{redirect_url}' "https://github.com/$repo/releases/latest" | sed 's#.*/##')
+  if [ -z "$tag" ]; then
+    # The API is rate-limited without a token; the latest-release redirect is not.
+    tag=$(curl -fsSI -o /dev/null -w '%{redirect_url}' "https://github.com/$repo/releases/latest" | sed 's#.*/##')
+  fi
   case "$tag" in
     v[0-9]*) ;;
     *)
@@ -21,6 +34,12 @@ main() {
       ;;
   esac
   version="${tag#v}"
+  if [ -n "$print" ]; then
+    echo "$version"
+    exit 0
+  fi
+
+  command -v bash >/dev/null 2>&1 || { echo "get.sh: bash is required" >&2; exit 1; }
 
   tmp=$(mktemp -d)
   trap 'rm -rf "$tmp"' EXIT
@@ -34,4 +53,4 @@ main() {
   bash "$tmp/install.sh" --user --as-version "$version"
 }
 
-main
+main "$@"

@@ -16,6 +16,7 @@ import os
 
 from gi.repository import Gdk, Gio, GLib
 
+from . import config
 from .overlay import ShellExtension, is_wayland
 
 KWIN_IFACE = """
@@ -28,8 +29,7 @@ KWIN_SCRIPT = "lovearound-fullscreen"
 
 
 def kwin_script_path():
-    # Beside the package, in a checkout and in an install alike.
-    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "kwin", "fullscreen.js")
+    path = os.path.join(config.ROOT, "kwin", "fullscreen.js")
     return path if os.path.exists(path) else None
 
 

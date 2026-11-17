@@ -128,7 +128,7 @@ The window hides on Escape and on losing focus, like a menu.
 | `gnome-extension/lovearound@lovearound.me/` | the GNOME Shell extension: glow + emoji, presenting, popup placement |
 | `data/` | `.desktop` (`x-scheme-handler/lovearound` and the old `…/needed`), AppStream metainfo |
 | `tools/make_icons.py` | hicolor PNGs from `icons.app_icon` |
-| `tools/get.sh` | the one-line install of the latest release |
+| `tools/get.sh` | the one-line install of the latest release, and the updater of a user install |
 | `install.sh` | where the app's installed files go, for a `--user` install or a package's staging tree; `build.sh` packs its `/usr` tree into the `.deb` with the doc and APT files |
 | `tests/` | unit tests, `fake_server.py` (Firebase Auth + the server on localhost) |
 
@@ -209,9 +209,8 @@ notification instead of the glow, and signals make no sound. The menu entry,
 the `lovearound://` links and autostart run the launcher by its full path, so
 they work without `~/.local/bin` on PATH. `--uninstall` also takes the app out
 of autostart. A package for another distro runs
-`./install.sh --prefix /usr --destdir <staging>`, as `build.sh` does. Nothing
-updates such an install: run the `curl` line again, or `install.sh` after a `git pull`,
-and a running app restarts itself into the new version, as it does after apt.
+`./install.sh --prefix /usr --destdir <staging>`, as `build.sh` does, and is
+updated by its package manager; a user install updates itself (see Updates).
 
 ## Updates
 
@@ -243,9 +242,16 @@ sudo curl -fsSLo /etc/apt/sources.list.d/lovearound.sources https://raw.githubus
 sudo apt update && sudo apt install lovearound
 ```
 
-"Проверить обновления…" opens the desktop's updater. The
+For the package, "Проверить обновления…" opens the desktop's updater. The
 running app watches its own `VERSION` file: when apt replaces it, the app
 restarts itself into the new version as soon as no window of it is open.
+
+A user install keeps its release's `get.sh` beside the code, and the app
+updates itself with it: it offers a new release in Settings → Account, where
+"Проверить обновления…" also leads, and nothing installs without the click.
+An installed `get.sh` runs the `install.sh` of whatever release it fetches, so
+each release's `install.sh` has to keep accepting what earlier `get.sh`
+versions pass it.
 
 ## Not verified yet
 

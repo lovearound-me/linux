@@ -20,6 +20,7 @@ usage() {
     exit 2
 }
 
+# The get.sh of an earlier release runs this script as --user --as-version X.
 while [ $# -gt 0 ]; do
     case "$1" in
         --user) MODE=user ;;
@@ -142,7 +143,7 @@ echo "$VERSION" > "$staged/lovearound/VERSION"
 # The dictionaries (i18n.py).
 cp i18n/*.json "$staged/lovearound/i18n/"
 install -m 644 kwin/fullscreen.js "$staged/kwin/"
-[ "$MODE" = package ] || install -m 644 tools/get.sh "$staged/get.sh"
+[ "$MODE" != user ] || install -m 644 tools/get.sh "$staged/get.sh"
 
 # A reinstall must leave no file a newer version dropped.
 remove_files

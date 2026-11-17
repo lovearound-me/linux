@@ -6,7 +6,7 @@ import unittest
 
 import cairo
 
-from lovearound import effect, i18n, icons, model, palette, signinbox
+from lovearound import effect, i18n, icons, model, palette, signinbox, update
 
 i18n.set_language("ru")
 
@@ -257,3 +257,18 @@ class SecretStoreSaveTest(unittest.TestCase):
         store = self.store("signedOut", True)
         store.save(Session("uid", "me@example.com", "rt"))
         self.assertEqual(store.settings["keyringSession"], "stored")
+
+
+class UpdateTest(unittest.TestCase):
+    def test_newer(self):
+        self.assertTrue(update.newer("0.2.10", "0.2.9"))
+        self.assertTrue(update.newer("0.3.0", "0.2.99"))
+        self.assertTrue(update.newer("0.2.9.1", "0.2.9"))
+        self.assertFalse(update.newer("0.2.9", "0.2.9"))
+        self.assertFalse(update.newer("0.2.8", "0.2.9"))
+
+    def test_dev_or_garbage_is_never_updated(self):
+        self.assertFalse(update.newer("0.2.10", "dev"))
+        self.assertFalse(update.newer("", "0.2.9"))
+        self.assertFalse(update.newer("<html>", "0.2.9"))
+        self.assertFalse(update.newer("0.2.10\n0.2.11", "0.2.9"))

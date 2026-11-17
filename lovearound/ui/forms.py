@@ -137,7 +137,7 @@ class AddForm(Gtk.Box):
         self.model = model
         self.on_added = on_added
         self.busy = False
-        self.color = model.next_color
+        self.color = model.free_color
         self.close = model.new_contact_is_close
         self.code = None
 

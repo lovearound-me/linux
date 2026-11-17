@@ -1,6 +1,7 @@
 """App state behind the menu. Contact colors, the own signal color and all
 settings stay on this computer: the server only knows contacts and labels."""
 import datetime
+import random
 import time
 import urllib.parse
 
@@ -401,52 +402,45 @@ class AppModel(GObject.Object):
         return next((c for c in self.contacts if c.id == id_), None)
 
     def color_index(self, contact):
-        index = self.settings["contactColors"].get(contact.id)
-        if index is not None:
-            return index % len(palette.ALL)
-        ids = [c.id for c in self.contacts]
-        return (ids.index(contact.id) if contact.id in ids else 0) % len(palette.ALL)
+        """A contact's color is kept on the contact, so every device shows the same one."""
+        return (contact.color or 0) % len(palette.ALL)
 
     def color_for(self, contact):
         return palette.at(self.color_index(contact))
 
     @property
-    def next_color(self):
-        """The first color not yet used, for a new contact."""
-        used = {self.settings["contactColors"].get(c.id, -1) for c in self.contacts}
+    def free_color(self):
+        """For a new contact, as the server picks: a color nobody in the book
+        has yet, at random; any one once all are taken."""
+        used = {c.color for c in self.contacts}
         free = [i for i in range(len(palette.ALL)) if i not in used]
-        return free[0] if free else len(self.contacts) % len(palette.ALL)
-
-    def _set_color(self, id_, color):
-        colors = dict(self.settings["contactColors"])
-        if color is None:
-            colors.pop(id_, None)
-        else:
-            colors[id_] = color
-        self.settings["contactColors"] = colors
+        return random.choice(free or range(len(palette.ALL)))
 
     def add_contact(self, code, label, color, close, done, fail):
         def added(contact):
-            self._set_color(contact.id, color)
+            if contact.color is None:
+                contact.color = color
             self.contacts.append(contact)
             self.changed()
             done(contact)
-        tasks.run(self.api.add_contact, code, label, close, done=added, fail=fail)
+        tasks.run(self.api.add_contact, code, label, close, color, done=added, fail=fail)
 
     def update_contact(self, contact, label, color, done=None, fail=None):
         """Name and color; where they are is the book's drag, not this."""
-        self._set_color(contact.id, color)
+        new_label = label if label != contact.label else None
+        new_color = color if color != self.color_index(contact) else None
 
         def saved(_):
             current = self.contact(contact.id)
             if current:
                 current.label = label
+                current.color = color
             self.changed()
             if done:
                 done(None)
 
-        if label != contact.label:
-            self.serial.submit(self.api.update_contact, contact.id, label, done=saved, fail=fail)
+        if new_label is not None or new_color is not None:
+            self.serial.submit(self.api.update_contact, contact.id, new_label, None, None, new_color, done=saved, fail=fail)
         else:
             saved(None)
 
@@ -462,7 +456,6 @@ class AppModel(GObject.Object):
     def remove(self, contact, done, fail):
         def removed(_):
             self.contacts = [c for c in self.contacts if c.id != contact.id]
-            self._set_color(contact.id, None)
             last = dict(self.settings["lastSent"])
             last.pop(contact.id, None)
             self.settings["lastSent"] = last
@@ -622,7 +615,6 @@ class AppModel(GObject.Object):
 
     def delete_account(self, done, fail):
         def deleted(_):
-            self.settings["contactColors"] = {}
             self.settings["lastSent"] = {}
             self.sign_out()
             done(None)

@@ -173,6 +173,43 @@ class ServerTest(unittest.TestCase):
             m.resume()
             m.stream.stop()
 
+    def test_contact_colors_are_kept_on_the_server(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            m = AppModel(Auth(MemoryStore(Session("uid", "me@example.com", "refresh-1"))), Settings(os.path.join(tmp, "settings.json")))
+            m.overlay = FakeOverlay()
+            m.start()
+            self.assertTrue(until(lambda: m.online and len(m.contacts) > 2))
+            # Read from the contact, not from the place in the list.
+            second = m.contacts[1]
+            self.assertEqual(m.color_index(second), second.color)
+            # A new one starts in a color nobody has yet, and the server gets it.
+            used = {c.color for c in m.contacts}
+            color = m.free_color
+            self.assertTrue(len(used) >= 12 or color not in used)
+            added = []
+            m.add_contact("QK4TR7ZPMA", "Новый", color, False, added.append, self.fail)
+            self.assertTrue(until(lambda: added))
+            self.assertEqual(added[0].color, color)
+            self.assertEqual(next(c for c in self.state()["contacts"] if c["id"] == added[0].id)["color"], color)
+            # A rename alone sends no color; a repaint sends only the color.
+            id_, label, was = second.id, second.label, second.color
+            now = (was + 1) % 12
+            done = []
+            m.update_contact(m.contact(id_), "Другое имя", was, done.append)
+            self.assertTrue(until(lambda: len(done) == 1))
+            m.update_contact(m.contact(id_), "Другое имя", now, done.append)
+            self.assertTrue(until(lambda: len(done) == 2))
+            patches = [p for p in self.state()["patches"] if p["id"] == id_]
+            self.assertEqual(patches[-2:], [{"id": id_, "label": "Другое имя"}, {"id": id_, "color": now}])
+            self.assertEqual(m.contact(id_).color, now)
+            # Nothing about contacts' colors stays on this computer.
+            self.assertNotIn("contactColors", Settings(os.path.join(tmp, "settings.json")).values)
+            # The book as it was, for the other tests.
+            m.update_contact(m.contact(id_), label, was, done.append)
+            m.remove(added[0], done.append, self.fail)
+            self.assertTrue(until(lambda: len(done) == 4))
+            m.stream.stop()
+
     def test_api_errors(self):
         from lovearound.api import API
         api = API(Auth(MemoryStore(Session("uid", "me@example.com", "refresh-1"))))

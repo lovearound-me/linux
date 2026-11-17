@@ -51,8 +51,9 @@ Same as the [Mac app](https://github.com/lovearound-me/mac#readme):
   color, emoji floating up, clicks pass through. The receiver never learns
   who sent it. The sender sees the same effect in the contact's color.
 - Light or dark follows the desktop (`org.freedesktop.appearance color-scheme`
-  via the portal, then the GTK theme name). Colors and settings stay in
-  `~/.config/lovearound/settings.json`; the server stores no colors.
+  via the portal, then the GTK theme name). The own color and settings stay in
+  `~/.config/lovearound/settings.json`; each contact's color is kept on the
+  server with the contact, so every device shows the same one.
 - First launch adds `~/.config/autostart/me.lovearound.LoveAround.desktop`
   (`lovearound --background`) and, on GNOME, turns the extension on.
 

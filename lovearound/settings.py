@@ -1,4 +1,5 @@
-"""Local settings: colors, the signal look, the pause. They never leave this computer."""
+"""Local settings: the own color, the signal look, the pause. They never leave
+this computer; each contact's color is kept on the server with the contact."""
 import json
 import os
 import sys
@@ -15,7 +16,6 @@ DEFAULTS = {
     "minGap": 1,
     "acceptAnyone": True,
     "anyoneSentAt": None,
-    "contactColors": {},
     "lastSent": {},
     "pausedUntil": None,
     "autostartAdded": False,

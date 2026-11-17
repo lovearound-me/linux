@@ -32,7 +32,7 @@ class Fake:
 
     def seed(self, names, close=5):
         for i, name in enumerate(names):
-            contact = {"id": "c%d" % self.next_id, "label": name, "position": i, "close": i < close}
+            contact = {"id": "c%d" % self.next_id, "label": name, "position": i, "close": i < close, "color": i % 12}
             if i < len(names) - 1:  # the last one added before the server kept codes
                 contact["invite_url"] = "https://lovearound.me/i/%s-%s" % (CODES[i % len(CODES)][:5], CODES[i % len(CODES)][5:])
             self.contacts.append(contact)
@@ -107,7 +107,8 @@ def handle(server, msg, path, query):
     if route == "contacts":
         if method == "POST":
             contact = {"id": "c%d" % fake.next_id, "label": j["label"], "position": len(fake.contacts),
-                       "close": bool(j.get("close")), "invite_url": "https://lovearound.me/i/" + j["code"]}
+                       "close": bool(j.get("close")), "invite_url": "https://lovearound.me/i/" + j["code"],
+                       "color": j["color"] if j.get("color") is not None else 7}
             fake.next_id += 1
             fake.contacts.append(contact)
             return reply(msg, 201, contact)

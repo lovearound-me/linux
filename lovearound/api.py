@@ -7,7 +7,7 @@ from .i18n import tr
 
 @dataclass
 class Contact:
-    """A contact from the server. Its color is not here: colors live on this computer."""
+    """A contact from the server, with the owner's color for them."""
 
     # The server's id for this entry; the person's own id never leaves it.
     id: str
@@ -18,11 +18,14 @@ class Contact:
     # The person's Love ID link, to pass on to people who know them; None for
     # contacts added before the server kept it, or by a wrong code.
     invite_url: str = None
+    # An index into the palette, kept on the server so every device shows the
+    # same one; None from a server older than the field.
+    color: int = None
 
     @classmethod
     def from_json(cls, j):
         return cls(str(j["id"]), j.get("label") or "", int(j.get("position") or 0), bool(j.get("close")),
-                   j.get("invite_url") or None)
+                   j.get("invite_url") or None, int(j["color"]) if j.get("color") is not None else None)
 
 
 @dataclass
@@ -69,12 +72,14 @@ class API:
     def contacts(self):
         return [Contact.from_json(j) for j in self._request("GET", "v1/contacts").get("contacts") or []]
 
-    def add_contact(self, code, label, close):
+    def add_contact(self, code, label, close, color):
         """Always answers the same whether or not the code belongs to anyone."""
-        return Contact.from_json(self._request("POST", "v1/contacts", {"code": code, "label": label, "close": close}))
+        return Contact.from_json(self._request("POST", "v1/contacts",
+                                               {"code": code, "label": label, "close": close, "color": color}))
 
-    def update_contact(self, id_, label=None, position=None, close=None):
-        body = {k: v for k, v in (("label", label), ("position", position), ("close", close)) if v is not None}
+    def update_contact(self, id_, label=None, position=None, close=None, color=None):
+        body = {k: v for k, v in (("label", label), ("position", position), ("close", close), ("color", color))
+                if v is not None}
         self._request("PATCH", "v1/contacts/" + id_, body)
 
     def delete_contact(self, id_):

@@ -22,6 +22,7 @@ class PersonPage(Gtk.Box):
         self.contact = contact
         self.on_removed = on_removed
         self.color = model.color_index(contact)
+        self.saving = False
         self.typing = None
         self.status_reset = None
         self.set_border_width(28)
@@ -117,20 +118,30 @@ class PersonPage(Gtk.Box):
             return
         self.status.set_text(tr("Сохраняем…"))
         self.error.hide()
+        self.saving = True
 
         def done(_):
+            self.saving = False
             if self.status_reset is False:
                 return
             self.status.set_text("✓ " + tr("Сохранено"))
             self.status_reset = w.later(1500, lambda: self.status.set_text(""))
 
         def fail(_):
+            self.saving = False
             if self.status_reset is False:
                 return
             self.status.set_text("")
             self.error.set_text(tr("Не получилось сохранить"))
             self.error.show()
         self.model.update_contact(current, label, color, done, fail)
+
+    def follow(self):
+        """Repainted on another device: shown here unless a save is on its way."""
+        current = self.model.contact(self.contact.id)
+        if current and not self.saving and self.model.color_index(current) != self.color:
+            self.color = self.model.color_index(current)
+            self._update()
 
     def remove(self):
         current = self.model.contact(self.contact.id)
@@ -390,6 +401,8 @@ class BookWindow(Gtk.Window):
         # A person's page stays while they are there, not to lose what is being typed.
         if gone or not isinstance(self.page, PersonPage):
             self.show_detail()
+        else:
+            self.page.follow()
 
     def _deferred(self):
         if self.dragged:

@@ -55,6 +55,8 @@ class APIError(Exception):
             return tr("Не похоже на ссылку-приглашение")
         if self.status == 400 and self.message == "too many contacts":
             return tr("В списке уже 200 человек")
+        if self.status == 409 and self.message == "too many close":
+            return tr("Рядом уже 12 человек: сначала убери кого-нибудь.")
         return {
             404: tr("Не нашли"),
             409: tr("Уже есть в списке"),

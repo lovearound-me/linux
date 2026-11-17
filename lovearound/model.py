@@ -23,6 +23,8 @@ DEFAULT_EMOJI = 40
 # The steps of "Свечение не чаще раза в".
 GAPS = [1, 5, 15, 30, 60, 300, 900, 3600]
 ANYONE_ID = "★anyone"
+# "Рядом" holds 12 at most: the server refuses a 13th.
+MAX_CLOSE = 12
 ALPHABET = set("23456789ABCDEFGHJKMNPQRSTVWXYZ")
 
 
@@ -394,9 +396,13 @@ class AppModel(GObject.Object):
         return [c for c in self.contacts_by_name if q in c.label.casefold()]
 
     @property
+    def close_full(self):
+        return len(self.close_contacts) >= MAX_CLOSE
+
+    @property
     def new_contact_is_close(self):
-        """New contacts start among the close ones until there are a couple of rows of them."""
-        return len(self.close_contacts) < 10
+        """New contacts start among the close ones while there is room."""
+        return not self.close_full
 
     def contact(self, id_):
         return next((c for c in self.contacts if c.id == id_), None)
@@ -451,7 +457,11 @@ class AppModel(GObject.Object):
             return
         current.close = close
         self.changed()
-        self.serial.submit(self.api.update_contact, contact.id, None, None, close, fail=self._save_failed(tr("Не получилось сохранить")))
+
+        def fail(error):
+            full = isinstance(error, APIError) and error.status == 409 and error.message == "too many close"
+            self._save_failed(str(error) if full else tr("Не получилось сохранить"))(error)
+        self.serial.submit(self.api.update_contact, contact.id, None, None, close, fail=fail)
 
     def remove(self, contact, done, fail):
         def removed(_):
@@ -474,17 +484,21 @@ class AppModel(GObject.Object):
         self._reorder_close(close)
 
     def place(self, contact, close_at):
-        """A drag in the book: into "Рядом" at this place among the circles, or out of it with None."""
+        """A drag in the book: into "Рядом" at this place among the circles, or out of it with None.
+        False when "Рядом" is full: nothing changes."""
         person = self.contact(contact.id)
         if person is None:
-            return
+            return True
         if close_at is None:
             self.set_close(person, False)
-            return
+            return True
+        if not person.close and self.close_full:
+            return False
         self.set_close(person, True)
         close = [c for c in self.close_contacts if c.id != person.id]
         close.insert(min(close_at, len(close)), person)
         self._reorder_close(close)
+        return True
 
     def _reorder_close(self, close):
         """Shown at once; saved a moment after the last change, so a drag across

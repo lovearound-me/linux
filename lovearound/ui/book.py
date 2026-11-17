@@ -179,6 +179,7 @@ class BookWindow(Gtk.Window):
         self.page = None
         self.filling = False
         self.dragged = None
+        self.refused = False  # a drag into a full «Рядом», said under its heading
         self.deferred = None
 
         paned = Gtk.Box()
@@ -269,6 +270,8 @@ class BookWindow(Gtk.Window):
             box.pack_start(w.label(tr("Перетащи сюда тех, кому хочешь нажимать в один клик") if near else
                                    tr("Перетащи сюда, чтобы убрать кружок из меню"), "note", wrap=True, width_chars=28),
                            False, False, 0)
+        if near and self.refused:
+            box.pack_start(w.label(tr("Рядом уже 12 человек: сначала убери кого-нибудь."), "danger", "small", wrap=True, width_chars=28), False, False, 0)
         box.set_margin_top(2 if near else 12)
         box.set_margin_bottom(2)
         row.add(box)
@@ -315,15 +318,18 @@ class BookWindow(Gtk.Window):
         if person is None:
             return
         if hasattr(row, "near"):
-            self.model.place(person, 0 if row.near else None)
+            placed = self.model.place(person, 0 if row.near else None)
         elif row.close_index is None:
-            self.model.place(person, None)
+            placed = self.model.place(person, None)
         else:
             others = [c.id for c in self.model.close_contacts if c.id != person.id]
             at = others.index(row.contact_id) if row.contact_id in others else len(others)
             if y > row.get_allocated_height() / 2:
                 at += 1
-            self.model.place(person, at)
+            placed = self.model.place(person, at)
+        if self.refused != (not placed):
+            self.refused = not placed
+            self.fill()
 
     def _row_selected(self, listbox, row):
         if self.filling or row is None or not hasattr(row, "contact_id"):

@@ -5,7 +5,9 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import unittest
+from unittest import mock
 
 from lovearound import presenting, update
 from tests import until
@@ -273,6 +275,17 @@ class UpdateScriptTest(unittest.TestCase):
                 update.install(write_get_sh(folder, 'exit 1\n'), "0.2.10")
 
 
+    def test_a_timeout_stops_what_get_sh_started(self):
+        with tempfile.TemporaryDirectory() as folder:
+            finished = os.path.join(folder, "finished")
+            path = write_get_sh(folder, "sh -c 'sleep 1; touch \"%s\"'\n" % finished)
+            with mock.patch.object(update, "INSTALL_TIMEOUT", 0.2):
+                with self.assertRaises(update.Failed):
+                    update.install(path, "0.2.10")
+            time.sleep(1.5)
+            self.assertFalse(os.path.exists(finished))
+
+
 class UpdaterTest(unittest.TestCase):
     def updater(self, folder, body):
         return update.Updater(write_get_sh(folder, body), "0.2.9", lambda: None, lambda: None)
@@ -302,6 +315,31 @@ class UpdaterTest(unittest.TestCase):
             self.assertEqual(updater.state, "install-failed")
             updater.dismiss()
             self.assertEqual((updater.state, updater.version), ("available", "0.2.10"))
+
+    def test_closing_during_a_check_drops_its_answer_but_not_a_release(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for body, shown in (('sleep 0.3; echo 0.2.9\n', ("idle", None)),
+                                ('sleep 0.3; exit 1\n', ("idle", None)),
+                                ('sleep 0.3; echo 0.2.10\n', ("available", "0.2.10"))):
+                updater = self.updater(folder, body)
+                updater.check(asked=True)
+                updater.dismiss()
+                self.assertEqual(updater.state, "idle")
+                self.settle(updater)
+                self.assertEqual((updater.state, updater.version), shown, body)
+
+    def test_a_day_between_checks_is_counted_on_the_wall_clock(self):
+        with tempfile.TemporaryDirectory() as folder:
+            ran = os.path.join(folder, "ran")
+            updater = self.updater(folder, 'touch "%s"; echo 0.2.9\n' % ran)
+            updater.checked_at = time.time() - update.CHECK_EVERY_SECONDS + 60
+            self.assertTrue(updater._look())
+            self.assertFalse(updater.busy)
+            updater.checked_at = time.time() - update.CHECK_EVERY_SECONDS - 1
+            self.assertTrue(updater._look())
+            self.settle(updater)
+            self.assertTrue(os.path.exists(ran))
+            self.assertAlmostEqual(updater.checked_at, time.time(), delta=5)
 
     def test_asking_during_a_scheduled_check_reports_its_answer(self):
         with tempfile.TemporaryDirectory() as folder:

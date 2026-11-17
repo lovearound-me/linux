@@ -1,6 +1,8 @@
 import os
 import re
+import signal
 import subprocess
+import time
 
 from gi.repository import GLib
 
@@ -11,6 +13,9 @@ INSTALL_TIMEOUT = 600
 # The first check waits for the login rush to pass.
 FIRST_CHECK_SECONDS = 120
 CHECK_EVERY_SECONDS = 24 * 60 * 60
+# GLib's timers stop while the machine sleeps, so the day is counted on the
+# wall clock and looked at every hour of waking time.
+LOOK_EVERY_SECONDS = 60 * 60
 
 
 class Failed(Exception):
@@ -35,19 +40,29 @@ def installed_get_sh():
     return path if os.path.isfile(path) else None
 
 
-def _get_sh(path, args, timeout, **run):
+def _get_sh(path, args, timeout, stdout=None):
+    """get.sh's output; get.sh runs in a process group of its own, so a timeout
+    stops the curl and install.sh under it too, and no update goes on after "failed"."""
     try:
-        done = subprocess.run(["sh", path, *args], timeout=timeout, **run)
-    except (OSError, subprocess.TimeoutExpired) as error:
+        process = subprocess.Popen(["sh", path, *args], stdout=stdout, text=True, start_new_session=True)
+    except OSError as error:
         raise Failed from error
-    if done.returncode != 0:
+    try:
+        out, _ = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        process.wait()
+        raise Failed from error
+    if process.returncode != 0:
         raise Failed
-    return done
+    return out
 
 
 def latest(path):
-    done = _get_sh(path, ["--latest"], CHECK_TIMEOUT, stdout=subprocess.PIPE, text=True)
-    version = done.stdout.strip()
+    version = _get_sh(path, ["--latest"], CHECK_TIMEOUT, stdout=subprocess.PIPE).strip()
     if parse(version) is None:
         raise Failed
     return version
@@ -70,18 +85,24 @@ class Updater:
         self.version = None
         self.busy = False
         self.asked = False
+        self.checked_at = None
 
     def _set(self, state, version=None):
         self.state, self.version = state, version
         self.on_change()
 
     def start(self):
-        GLib.timeout_add_seconds(FIRST_CHECK_SECONDS, self._scheduled_check)
+        GLib.timeout_add_seconds(FIRST_CHECK_SECONDS, self._first_check)
 
-    def _scheduled_check(self):
+    def _first_check(self):
         self.check(asked=False)
-        GLib.timeout_add_seconds(CHECK_EVERY_SECONDS, self._scheduled_check)
+        GLib.timeout_add_seconds(LOOK_EVERY_SECONDS, self._look)
         return False
+
+    def _look(self):
+        if self.checked_at is None or time.time() - self.checked_at >= CHECK_EVERY_SECONDS:
+            self.check(asked=False)
+        return True
 
     def _run(self, fn, *args, done, fail):
         self.busy = True
@@ -100,6 +121,7 @@ class Updater:
             self._set("checking")
         if self.busy:
             return
+        self.checked_at = time.time()
 
         def done(found):
             if newer(found, self.current):
@@ -119,8 +141,12 @@ class Updater:
         return self.state == "installing"
 
     def dismiss(self):
-        """The answer to a check or a failed update lasts until it has been seen; the offer stays."""
-        if self.state in ("latest", "check-failed"):
+        """The answer to a check or a failed update lasts until it has been seen; the offer stays.
+        A check still running when Settings closes reports only a release it finds."""
+        if self.state == "checking":
+            self.asked = False
+            self._set("idle")
+        elif self.state in ("latest", "check-failed"):
             self._set("idle")
         elif self.state == "install-failed":
             self._set("available", self.version)

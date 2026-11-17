@@ -250,6 +250,12 @@ class SettingsWindow(Gtk.Window):
         self.account_tab.pack_start(self._language_row(), False, False, 0)
         self.account_tab.pack_start(w.label("Love Around " + config.VERSION, "note", xalign=0.5, selectable=True),
                                     False, False, 0)
+        self.updater = app.updater
+        if self.updater:
+            self.connect("hide", lambda _: self.updater.dismiss())
+            self.update_box = w.vbox(6)
+            self.update_box.set_halign(Gtk.Align.CENTER)
+            self.account_tab.pack_start(self.update_box, False, False, 0)
         for page, name, title in ((self.signal_tab, "signal", tr("Сигнал")), (self.when_tab, "when", tr("Когда")),
                                   (self.devices_tab, "devices", tr("Устройства")), (self.account_tab, "account", tr("Аккаунт"))):
             self.stack.add_titled(page, name, title)
@@ -268,10 +274,12 @@ class SettingsWindow(Gtk.Window):
             self.devices_tab.load()
         self.resize(WIDTH, 1)
 
-    def open(self):
+    def open(self, tab=None):
         # Back for a device token that is shown only once.
         if self.model.created_device:
             self.stack.set_visible_child(self.devices_tab)
+        elif tab:
+            self.stack.set_visible_child_name(tab)
         self.refresh()
         self.present()
         if self.stack.get_visible_child() is self.devices_tab:
@@ -445,6 +453,27 @@ class SettingsWindow(Gtk.Window):
             self._build_account()
         self.model.delete_account(done, fail)
 
+    def refresh_update(self):
+        if not self.updater:
+            return
+        w.clear(self.update_box)
+        state, version = self.updater.state, self.updater.version
+        text = {
+            "checking": tr("Проверяю обновления…"),
+            "available": tr("Доступна версия {version}", version=version),
+            "latest": tr("Это последняя версия"),
+            "check-failed": tr("Не получилось проверить обновления"),
+            "installing": tr("Обновляю…"),
+            "install-failed": tr("Не получилось обновить"),
+        }.get(state)
+        if text:
+            self.update_box.pack_start(w.label(text, "note", xalign=0.5), False, False, 0)
+            if state in ("available", "install-failed"):
+                self.update_box.pack_start(w.button(tr("Обновить"), "small-button", action=self.updater.install),
+                                           False, False, 0)
+        self.update_box.show_all()
+        self.update_box.set_visible(bool(text))
+
     # ---- everything shown from the model
 
     def refresh(self):
@@ -472,5 +501,6 @@ class SettingsWindow(Gtk.Window):
         if self.stack.get_visible_child() is not self.devices_tab or not model.signed_in:
             self.devices_tab.set_sensitive(model.signed_in)
         self._build_account()
+        self.refresh_update()
         if not model.signed_in:
             self.confirm_delete = False

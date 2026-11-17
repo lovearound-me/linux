@@ -1,28 +1,29 @@
 #!/bin/bash
 # Installs Love Around on any distro: ./install.sh --user puts it in ~/.local,
-# sudo ./install.sh in /usr/local. Packagers pass --prefix /usr --destdir
-# <staging>. --uninstall removes the same files. A release archive, which has
-# no git history, passes --as-version.
+# and --user --uninstall removes it. Packagers pass --prefix /usr --destdir
+# <staging>. A release archive, which has no git history, passes --as-version.
 # Dependencies are checked, not installed: their package names differ by distro.
 set -euo pipefail
 
 PKG=lovearound
 APP_ID=me.lovearound.LoveAround
 EXTENSION=lovearound@lovearound.me
-PREFIX=/usr/local
+MODE=
+PREFIX=
 DESTDIR=
 UNINSTALL=
-DATA=
 VERSION=
 
 usage() {
-    echo "usage: $0 [--user | --prefix DIR] [--destdir DIR] [--as-version X.Y.Z] [--uninstall]" >&2
+    echo "usage: $0 --user [--uninstall] [--as-version X.Y.Z]" >&2
+    echo "       $0 --prefix DIR --destdir DIR [--as-version X.Y.Z]" >&2
     exit 2
 }
 
+# The get.sh of an earlier release runs this script as --user --as-version X.
 while [ $# -gt 0 ]; do
     case "$1" in
-        --user) PREFIX="$HOME/.local"; DATA="${XDG_DATA_HOME:-$HOME/.local/share}" ;;
+        --user) MODE=user ;;
         --prefix) [ $# -ge 2 ] || usage; PREFIX="$2"; shift ;;
         --destdir) [ $# -ge 2 ] || usage; DESTDIR="$2"; shift ;;
         --as-version) [ $# -ge 2 ] || usage; VERSION="$2"; shift ;;
@@ -32,19 +33,31 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+# A user install updates itself (get.sh); a package is updated by its package manager.
+if [ "$MODE" = user ]; then
+    [ -z "$PREFIX$DESTDIR" ] || usage
+elif [ -n "$PREFIX" ] && [ -n "$DESTDIR" ] && [ -z "$UNINSTALL" ]; then
+    MODE=package
+else
+    usage
+fi
+
 absolute() {
-    case "$1" in /*|"") echo "$1" ;; *) echo "$PWD/$1" ;; esac
+    case "$1" in /*) echo "$1" ;; *) echo "$PWD/$1" ;; esac
 }
-PREFIX="$(absolute "$PREFIX")"
-DESTDIR="$(absolute "$DESTDIR")"
+if [ "$MODE" = user ]; then
+    PREFIX="$HOME/.local"
+    # GNOME Shell and the desktop look for a user's files in XDG_DATA_HOME, not under the prefix.
+    share="${XDG_DATA_HOME:-$HOME/.local/share}"
+else
+    PREFIX="$(absolute "$PREFIX")"
+    DESTDIR="$(absolute "$DESTDIR")"
+    share="$DESTDIR$PREFIX/share"
+fi
 cd "$(dirname "$0")"
-# Under sudo, bytecode written next to the checkout's sources would belong to root.
-export PYTHONDONTWRITEBYTECODE=1
 
 P="$DESTDIR$PREFIX"
 lib="$P/lib/$PKG"
-# GNOME Shell and the desktop look for a user's files in XDG_DATA_HOME, not under the prefix.
-share="$DESTDIR${DATA:-$PREFIX/share}"
 
 # Everything installed but the code, which a reinstall swaps instead.
 remove_files() {
@@ -55,7 +68,7 @@ remove_files() {
 
 refresh_caches() {
     # Packages leave this to their own triggers.
-    [ -z "$DESTDIR" ] || return 0
+    [ "$MODE" = user ] || return 0
     if command -v update-desktop-database >/dev/null; then
         update-desktop-database -q "$share/applications" || true
     fi
@@ -67,15 +80,13 @@ refresh_caches() {
 if [ -n "$UNINSTALL" ]; then
     rm -rf "$lib" "$lib.new" "$lib.old"
     remove_files
-    # The app adds itself to autostart on its first launch; a user install takes that back with it.
-    [ -z "$DATA" ] || rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/$APP_ID.desktop"
+    # The app adds itself to autostart on its first launch.
+    rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/autostart/$APP_ID.desktop"
     refresh_caches
     exit 0
 fi
 
 if [ -z "$VERSION" ]; then
-    # Under sudo the checkout belongs to another user, which git refuses without safe.directory.
-    git() { command git -c safe.directory="$PWD" "$@"; }
     if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" != false ]; then
         echo "lovearound: the version is counted from git history; install from a full clone or pass --as-version" >&2
         exit 1
@@ -132,6 +143,7 @@ echo "$VERSION" > "$staged/lovearound/VERSION"
 # The dictionaries (i18n.py).
 cp i18n/*.json "$staged/lovearound/i18n/"
 install -m 644 kwin/fullscreen.js "$staged/kwin/"
+[ "$MODE" != user ] || install -m 644 tools/get.sh "$staged/get.sh"
 
 # A reinstall must leave no file a newer version dropped.
 remove_files
@@ -156,7 +168,7 @@ mv "$staged" "$lib"
 rm -rf "$lib.old"
 refresh_caches
 
-[ -z "$DESTDIR" ] || exit 0
+[ "$MODE" = user ] || exit 0
 echo "Love Around $VERSION installed to $PREFIX"
 case ":$PATH:" in
     *":$PREFIX/bin:"*) ;;

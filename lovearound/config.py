@@ -19,6 +19,9 @@ API_BASE = os.environ.get("LOVEAROUND_API", API_BASE)
 FIREBASE_AUTH = os.environ.get("LOVEAROUND_AUTH", "https://identitytoolkit.googleapis.com/v1")
 FIREBASE_TOKEN = os.environ.get("LOVEAROUND_TOKEN", "https://securetoken.googleapis.com/v1/token")
 
+# The lovearound package's parent: the checkout, or install.sh's <prefix>/lib/lovearound.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Written by install.sh; a checkout runs as "dev".
 VERSION_FILE = os.path.join(os.path.dirname(__file__), "VERSION")
 
@@ -40,9 +43,8 @@ def launcher():
     """The installed <prefix>/bin/lovearound by its full path, for autostart: the
     session's PATH may lack ~/.local/bin. A checkout, or a path a .desktop Exec
     would have to quote, gets the bare name."""
-    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if os.path.basename(here) == "lovearound" and os.path.basename(os.path.dirname(here)) == "lib":
-        path = os.path.join(os.path.dirname(os.path.dirname(here)), "bin", "lovearound")
+    if os.path.basename(ROOT) == "lovearound" and os.path.basename(os.path.dirname(ROOT)) == "lib":
+        path = os.path.join(os.path.dirname(os.path.dirname(ROOT)), "bin", "lovearound")
         if os.path.isfile(path) and re.fullmatch(r"[A-Za-z0-9/._+-]+", path):
             return path
     return "lovearound"

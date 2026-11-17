@@ -237,7 +237,7 @@ class System:
 
     @staticmethod
     def watch_install(on_new_version):
-        """apt replaced the files of this running app: `on_new_version(version)` once."""
+        """apt or install.sh replaced the files of this running app: `on_new_version(version)` once."""
         monitor = Gio.File.new_for_path(config.VERSION_FILE).monitor_file(Gio.FileMonitorFlags.NONE, None)
 
         def changed(monitor, file, other, event):
@@ -252,8 +252,7 @@ class System:
 
     @staticmethod
     def restart(*extra):
-        """The new version in this process's place, quietly in the tray."""
-        args = [a for a in sys.argv[1:] if a not in ("--background", "--settings") and not config.is_link(a)]
-        args += list(extra)
+        """The new version in this process's place, quietly in the tray, with `extra`
+        as its only other options: every option this process started with has acted once."""
         start = ["-m", "lovearound"] if sys.argv[0].endswith("__main__.py") else [sys.argv[0]]
-        os.execv(sys.executable, [sys.executable] + start + ["--background"] + args)
+        os.execv(sys.executable, [sys.executable] + start + ["--background"] + list(extra))

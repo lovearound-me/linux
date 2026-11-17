@@ -5,18 +5,16 @@ import socket
 import subprocess
 import sys
 import tempfile
-import time
 import unittest
 import urllib.parse
 import urllib.request
-
-from gi.repository import GLib
 
 from lovearound import config, signinbox, tray
 from lovearound.api import APIError
 from lovearound.auth import Auth, AuthError, MemoryStore, Session
 from lovearound.model import AppModel
 from lovearound.settings import Settings
+from tests import until
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,18 +23,6 @@ def free_port():
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
-
-
-def until(check, timeout=5):
-    """Runs the main loop until check() is true."""
-    context = GLib.MainContext.default()
-    end = time.monotonic() + timeout
-    while time.monotonic() < end:
-        if check():
-            return True
-        context.iteration(False)
-        time.sleep(0.01)
-    return check()
 
 
 class FakeOverlay:

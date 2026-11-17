@@ -4,7 +4,7 @@ import sys
 
 from gi.repository import Gio, GLib, Gtk
 
-from . import config, i18n, overlay, system
+from . import config, i18n, overlay, system, update
 from .i18n import tr
 from .model import AppModel
 from .presenting import Presenting
@@ -12,6 +12,7 @@ from .tray import Tray
 
 # How long a tray may take to show up after login before the popup is shown instead.
 TRAY_GRACE_SECONDS = 4
+INTO_ACCOUNT = ("--settings", "--tab=account")
 
 
 class App(Gtk.Application):
@@ -30,6 +31,8 @@ class App(Gtk.Application):
         self.add_main_option("show-signal", 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
                              tr("Показать, как выглядит сигнал"), None)
         self.add_main_option("settings", 0, GLib.OptionFlags.NONE, GLib.OptionArg.NONE, tr("Открыть настройки"), None)
+        self.add_main_option("tab", 0, GLib.OptionFlags.HIDDEN, GLib.OptionArg.STRING, "", None)
+        self.updater = None
 
     # ---- start ----------------------------------------------------------------
 
@@ -73,6 +76,7 @@ class App(Gtk.Application):
                 "settings": self.show_settings,
                 "add": self.show_add,
                 "updates": self.check_updates,
+                "update": self.install_update,
                 "quit": self.quit_app,
             })
             self.tray.on_watcher = self._tray_changed
@@ -82,6 +86,10 @@ class App(Gtk.Application):
 
         self.system.on_wake(model.stream.restart)
         self._install_monitor = self.system.watch_install(self._new_version)
+        get_sh = update.installed_get_sh()
+        if get_sh:
+            self.updater = update.Updater(get_sh, config.VERSION, self._update_changed, self._updated)
+            self.updater.start()
 
         # The first launch puts the app into autostart, like the Mac app's login
         # item; remembered only once the file is there (a home the user couldn't
@@ -126,7 +134,7 @@ class App(Gtk.Application):
         for link in links:
             self.model.handle(link)
         if options.get("settings"):
-            self.show_settings()
+            self.show_settings(options.get("tab"))
         elif options.get("show-signal"):
             self.model.play_effect()
         elif not links and not options.get("background"):
@@ -158,19 +166,19 @@ class App(Gtk.Application):
             self.book.show_all()
         self.book.open(contact_id)
 
-    def show_settings(self):
+    def show_settings(self, tab=None):
         from .ui.settings import SettingsWindow
         self.popup.hide()
         if self.settings_window is None:
             self.settings_window = SettingsWindow(self, self.model, self.system, self.notes)
-        self.settings_window.open()
+        self.settings_window.open(tab)
 
     def set_language(self, code):
         """Every window and menu in the new language: the app starts again, back in Settings."""
         if code == self.model.get("language"):
             return
         self.model.set("language", code)
-        self.system.restart("--settings")
+        self._restart(*INTO_ACCOUNT)
 
     def show_add(self):
         if not self.model.signed_in:
@@ -181,7 +189,10 @@ class App(Gtk.Application):
         self.popup.show_at(fresh=False)
 
     def check_updates(self):
-        if not self.system.check_updates():
+        if self.updater:
+            self.show_settings("account")
+            self.updater.check(asked=True)
+        elif not self.system.check_updates():
             self.system.open_uri(config.SITE)
 
     def quit_app(self):
@@ -235,9 +246,29 @@ class App(Gtk.Application):
 
     # ---- updates ----------------------------------------------------------------------
 
+    def install_update(self):
+        """The tray's "Обновить до …": Settings shows how it goes, and the app restarts back into it."""
+        self.show_settings("account")
+        self.updater.install()
+
+    def _update_changed(self):
+        if self.settings_window:
+            self.settings_window.refresh_update()
+        if self.tray:
+            self.tray.set_update(self.updater.state, self.updater.version)
+
+    def _updated(self):
+        """The user asked for this release, so it is not held back until nobody is looking."""
+        self._restart(*INTO_ACCOUNT)
+
+    def _restart(self, *args):
+        self.presenting.stop()
+        self.system.restart(*args)
+
     def _new_version(self, version):
-        """apt put a new version in place: switch to it when nobody is looking."""
-        if self.pending_restart:
+        """apt or install.sh put a new version in place: switch to it when nobody is looking."""
+        # An update the user asked for restarts once get.sh has finished, not while install.sh still runs.
+        if self.pending_restart or (self.updater and self.updater.installing):
             return
 
         def when_idle():
@@ -245,8 +276,7 @@ class App(Gtk.Application):
             if busy:
                 return True
             self.pending_restart = None
-            self.presenting.stop()
-            system.System.restart()
+            self._restart()
             return False
         self.pending_restart = GLib.timeout_add_seconds(5, when_idle)
 

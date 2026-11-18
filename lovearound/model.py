@@ -111,6 +111,8 @@ class AppModel(GObject.Object):
 
         self.signed_in = False
         self.email = None
+        # How the account signed in ("google.com", "apple.com", "password"), for Settings → Аккаунт.
+        self.provider = None
         self.my_uid = None
         self.invite_url = None
         self.contacts = []
@@ -190,6 +192,8 @@ class AppModel(GObject.Object):
             if not self.signed_in:
                 return
             self.my_uid = me.get("uid") or self.my_uid
+            # The calls refreshed the ID token, which says how the account signed in.
+            self.provider = self.auth.provider
             self.invite_url = me.get("invite_url") or self.invite_url
             self.contacts = contacts
             self.problem = None
@@ -581,24 +585,19 @@ class AppModel(GObject.Object):
                 self.changed()
                 self.emit("show-menu")
 
-            tasks.run(self.auth.complete_google, url, done=done, fail=fail)
+            tasks.run(self.auth.complete_sign_in, url, done=done, fail=fail)
 
     # ---- account ------------------------------------------------------------------
 
-    def sign_in(self, email, password, done, fail):
-        def ok(_):
-            self._did_sign_in()
-            done(None)
-        tasks.run(self.auth.sign_in, email, password, done=ok, fail=fail)
-
-    def sign_in_with_google(self):
+    def sign_in_in_browser(self):
+        """Google, Apple and email all happen on the site's /signin/ page."""
         self.waiting_for_browser = True
         self.problem = None
-        self.open_uri(self.auth.google_sign_in_url())
+        self.open_uri(self.auth.sign_in_url())
         self.changed()
 
-    def send_password_reset(self, email, done, fail):
-        tasks.run(self.auth.send_password_reset, email, done=done, fail=fail)
+    def open_sign_in_methods(self):
+        self.open_uri(config.SIGN_IN_METHODS)
 
     def _did_sign_in(self):
         self.problem = None
@@ -620,6 +619,7 @@ class AppModel(GObject.Object):
         self.created_device = None
         self.signed_in = False
         self.email = None
+        self.provider = None
         self.my_uid = None
         self.invite_url = None
         self.contacts = []

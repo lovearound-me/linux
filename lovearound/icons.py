@@ -1,6 +1,8 @@
-"""The heart, drawn with cairo: for the tray, the menu's color dots and the app icon."""
+"""The heart, drawn with cairo: for the tray, the menu's color dots and the app icon.
+And the marks of the ways to sign in: Google, Apple, an envelope."""
 import io
 import math
+import re
 
 import cairo
 
@@ -16,6 +18,77 @@ def heart_path(cr, cx, cy, size):
     cr.curve_to(cx + s * 0.45, cy - s * 0.95, cx + s, cy - s * 0.8, cx + s, cy - s * 0.3)
     cr.curve_to(cx + s, cy + s * 0.15, cx + s * 0.2, cy + s * 0.65, cx, cy + s * 0.85)
     cr.close_path()
+
+
+# Apple's logo in a 24×24 box, the same path as the web app's: only M, relative c and z.
+APPLE = ("M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81"
+         "-2.99-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.88 1.15 9.13.76 1.1 1.67 2.33 2.86 2.29 1.15-.05 1.58-.74 2.97"
+         "-.74 1.38 0 1.78.74 2.99.72 1.24-.02 2.02-1.12 2.77-2.22.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.65z"
+         "M14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.02.61-2.67 1.37-.58.67-1.1 1.76-.96 2.8 1.02.08 2.06-.52 2.69-1.28z")
+
+
+def apple_path(cr, x, y, size):
+    """Apple's logo in the size×size box at (x, y), as a path to fill."""
+    cr.save()
+    cr.translate(x, y)
+    cr.scale(size / 24, size / 24)
+    command, numbers = None, []
+    for token in re.findall(r"[Mcz]|-?(?:\d+\.?\d*|\.\d+)", APPLE):
+        if token in "Mcz":
+            command, numbers = token, []
+            if token == "z":
+                cr.close_path()
+            continue
+        numbers.append(float(token))
+        if command == "M" and len(numbers) == 2:
+            cr.move_to(*numbers)
+            numbers = []
+        elif command == "c" and len(numbers) == 6:
+            cr.rel_curve_to(*numbers)
+            numbers = []
+    cr.restore()
+
+
+def google_mark(cr, cx, cy, size):
+    """Google's "G" in its four colors, centered on (cx, cy)."""
+    line = size * 0.22
+    r = (size - line) / 2
+    cr.set_line_width(line)
+    # Clockwise from three o'clock, in turns: blue, green, yellow, red, and the gap.
+    for start, end, color in ((0, 0.12, 0x4285F4), (0.12, 0.40, 0x34A853), (0.40, 0.60, 0xFBBC05), (0.60, 0.875, 0xEA4335)):
+        cr.new_path()
+        cr.arc(cx, cy, r, start * 2 * math.pi, end * 2 * math.pi)
+        cr.set_source_rgb(*palette.rgb(color))
+        cr.stroke()
+    cr.rectangle(cx, cy - line / 2, size / 2, line)
+    cr.set_source_rgb(*palette.rgb(0x4285F4))
+    cr.fill()
+
+
+def mail_mark(cr, x, y, size):
+    """An envelope in the size×size box at (x, y), as a path to stroke."""
+    k = size / 24
+    w, h, r = 20 * k, 16 * k, 2.5 * k
+    left, top = x + 2 * k, y + 4 * k
+    cr.new_sub_path()
+    cr.arc(left + w - r, top + r, r, -math.pi / 2, 0)
+    cr.arc(left + w - r, top + h - r, r, 0, math.pi / 2)
+    cr.arc(left + r, top + h - r, r, math.pi / 2, math.pi)
+    cr.arc(left + r, top + r, r, math.pi, 3 * math.pi / 2)
+    cr.close_path()
+    cr.move_to(x + 2.5 * k, y + 6.5 * k)
+    cr.line_to(x + 12 * k, y + 13 * k)
+    cr.line_to(x + 21.5 * k, y + 6.5 * k)
+
+
+def arrow_mark(cr, x, y, size):
+    """↗, a link that opens in the browser, as a path to stroke."""
+    k = size / 24
+    cr.move_to(x + 7 * k, y + 17 * k)
+    cr.line_to(x + 17 * k, y + 7 * k)
+    cr.move_to(x + 8 * k, y + 7 * k)
+    cr.line_to(x + 17 * k, y + 7 * k)
+    cr.line_to(x + 17 * k, y + 16 * k)
 
 
 def update_mark(cr, cx, cy, r):

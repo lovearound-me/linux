@@ -135,10 +135,12 @@ class Circle(Gtk.DrawingArea):
     """A ring of the palette color around a letter: avatars, the menu's
     circles (`filled` for the tinted fill), and the "+"."""
 
-    def __init__(self, size, text="", color=None, filled=False, ring=3.0):
+    def __init__(self, size, text="", color=None, filled=False, ring=3.0, apple=False):
         super().__init__()
         self.size = size
         self.text = text
+        # Apple's logo in place of the letter: signed in with Apple, the email hidden.
+        self.apple = apple
         self.color = color
         self.filled = filled
         self.ring = ring
@@ -180,11 +182,52 @@ class Circle(Gtk.DrawingArea):
         _rgb(cr, color.color)
         cr.arc(cx, cy, r - self.ring / 2, 0, 2 * math.pi)
         cr.stroke()
+        if self.apple and not self.sent:
+            side = self.size * 0.46
+            icons.apple_path(cr, cx - side / 2, cy - side / 2 - side * 0.04, side)
+            _rgb(cr, palette.deep(color, dark))
+            cr.fill()
+            return
         if self.sent:
             text, ink = "♥", palette.ui("paper", dark)
         else:
             text, ink = first_letter(self.text), palette.deep(color, dark)
         _text(cr, widget, text, self.size * (0.36 if self.filled else 0.41), Pango.Weight.BOLD, ink, cx, cy)
+
+
+class Mark(Gtk.DrawingArea):
+    """A small mark beside a word: "google", "apple", "mail" or "arrow" (↗),
+    in the UI color `ink` (Google's keeps its own four)."""
+
+    def __init__(self, name, size, ink="muted"):
+        super().__init__()
+        self.name, self.size, self.ink = name, size, ink
+        self.set_size_request(size, size)
+        self.set_valign(Gtk.Align.CENTER)
+        self.connect("draw", self._draw)
+
+    def _draw(self, widget, cr):
+        x = (self.get_allocated_width() - self.size) / 2
+        y = (self.get_allocated_height() - self.size) / 2
+        if self.name == "google":
+            icons.google_mark(cr, x + self.size / 2, y + self.size / 2, self.size * 0.86)
+            return
+        _rgb(cr, palette.ui(self.ink, style.dark()))
+        if self.name == "apple":
+            icons.apple_path(cr, x, y, self.size)
+            cr.fill()
+            return
+        (icons.mail_mark if self.name == "mail" else icons.arrow_mark)(cr, x, y, self.size)
+        cr.set_line_width(max(1.0, self.size / 24 * (1.8 if self.name == "mail" else 2.2)))
+        cr.set_line_cap(cairo.LINE_CAP_ROUND)
+        cr.set_line_join(cairo.LINE_JOIN_ROUND)
+        cr.stroke()
+
+
+def chip(mark, text):
+    """A pill with a mark and a word: a hint, not a button."""
+    box = hbox(5, Mark(mark, 13), label(text))
+    return classes(box, "chip")
 
 
 class AnyoneCircle(Gtk.DrawingArea):

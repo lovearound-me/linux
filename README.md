@@ -116,7 +116,7 @@ The window hides on Escape and on losing focus, like a menu.
 
 | Path | Contains |
 |---|---|
-| `lovearound/config.py` | API base URL, Firebase web API key, site URL, scheme, version; `LOVEAROUND_API` / `_AUTH` / `_TOKEN` point it at a fake server |
+| `lovearound/config.py` | API base URL, Firebase web API key, site URL, scheme, version; `LOVEAROUND_API` / `_TOKEN` point it at a fake server |
 | `lovearound/auth.py`, `lovearound/signinbox.py` | Firebase Auth over REST: email+password (sign-up for a new address), reset, refresh, Google via the site (the session sealed to a one-time key); the session in the Secret Service |
 | `lovearound/api.py` | `/v1` client; retries once on 401 with a fresh token |
 | `lovearound/stream.py` | `WS /v1/stream` (libsoup 3), ping every 30 s, 1→60 s backoff, reconnect after sleep and network changes |
@@ -131,7 +131,7 @@ The window hides on Escape and on losing focus, like a menu.
 | `tools/make_icons.py` | hicolor PNGs from `icons.app_icon` |
 | `tools/get.sh` | the one-line install of the latest release, and the updater of a user install |
 | `install.sh` | where the app's installed files go, for a `--user` install or a package's staging tree; `build.sh` packs its `/usr` tree into the `.deb` with the doc and APT files |
-| `tests/` | unit tests, `fake_server.py` (Firebase Auth + the server on localhost) |
+| `tests/` | unit tests, `fake_server.py` (Firebase token refresh + the server on localhost) |
 
 ## Sign-in
 

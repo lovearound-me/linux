@@ -1,10 +1,11 @@
-"""Firebase Auth over its REST API: email+password directly, Google through
-the site's /signin/ page, which hands the session back via lovearound://signin,
-sealed to a one-time key of ours (signinbox.py).
+"""Firebase Auth over its REST API. Signing in happens in the browser, on the
+site's /signin/ page (Google, Apple or email), which hands the session back via
+lovearound://signin, sealed to a one-time key of ours (signinbox.py).
 
 Only the refresh token is kept, in the Secret Service (GNOME Keyring,
 KWallet); ID tokens live in memory.
 """
+import base64
 import json
 import threading
 import time
@@ -18,11 +19,6 @@ from .signinbox import SignInKey
 
 # Translated when shown: the language can change while the app runs.
 MESSAGES = {
-    "INVALID_PASSWORD": N_("Неверный пароль. Если раньше вход был через Google, нажми «Назад» и «Войти через Google»"),
-    "WEAK_PASSWORD": N_("Пароль слишком простой"),
-    "INVALID_EMAIL": N_("Проверь адрес почты"),
-    "MISSING_EMAIL": N_("Проверь адрес почты"),
-    "MISSING_PASSWORD": N_("Введи пароль"),
     "TOO_MANY_ATTEMPTS_TRY_LATER": N_("Слишком много попыток, попробуй чуть позже"),
     "USER_DISABLED": N_("Этот аккаунт отключён"),
     "BAD_CALLBACK": N_("Вход не завершился, попробуй ещё раз"),
@@ -33,7 +29,7 @@ ENDS_SESSION = ("TOKEN_EXPIRED", "USER_DISABLED", "USER_NOT_FOUND", "INVALID_REF
 
 
 class AuthError(Exception):
-    """A Firebase Auth error code, e.g. "EMAIL_EXISTS", or None for signed out."""
+    """A Firebase Auth error code, e.g. "TOKEN_EXPIRED", or None for signed out."""
 
     def __init__(self, code=None):
         super().__init__(code or "SIGNED_OUT")
@@ -189,8 +185,8 @@ class Auth:
         self._id_token = None
         self._expires_at = 0.0
         self._lock = threading.Lock()
-        self._google_state = None
-        self._google_key = None
+        # (url, state, key) of the sign-in page opened in the browser and not answered yet.
+        self._pending = None
 
     def token(self, force_refresh=False):
         """A valid ID token, refreshed when it is about to expire."""
@@ -219,47 +215,18 @@ class Auth:
             self.store.save(session)
         return id_token
 
-    # ---- email + password ----------------------------------------------------
+    # ---- sign-in, through the site --------------------------------------------
 
-    def sign_in(self, email, password):
-        """Signs in, or creates the account when the email is new."""
-        try:
-            self._email_call("signInWithPassword", email, password)
-        except AuthError as error:
-            # With email enumeration protection both cases look the same:
-            # try to create the account, and an existing email means a wrong password.
-            if not (error.code or "").startswith(("EMAIL_NOT_FOUND", "INVALID_LOGIN_CREDENTIALS")):
-                raise
-            try:
-                self._email_call("signUp", email, password)
-            except AuthError as again:
-                if (again.code or "").startswith("EMAIL_EXISTS"):
-                    raise AuthError("INVALID_PASSWORD") from None
-                raise
+    def sign_in_url(self):
+        """The page that signs in (Google, Apple or email) and returns to
+        lovearound://signin, with the session sealed to our one-time key.
+        Opening it again gives the same page, so a tab already open still works."""
+        if self._pending is None:
+            state, key = str(uuid.uuid4()).upper(), SignInKey()
+            self._pending = ("%s/signin?state=%s&key=%s" % (config.SITE, state, key.public), state, key)
+        return self._pending[0]
 
-    def send_password_reset(self, email):
-        _post("accounts:sendOobCode", {"requestType": "PASSWORD_RESET", "email": email})
-
-    def _email_call(self, method, email, password):
-        json_ = _post("accounts:" + method, {"email": email, "password": password, "returnSecureToken": True})
-        uid, id_token, refresh = json_.get("localId"), json_.get("idToken"), json_.get("refreshToken")
-        if not uid or not id_token or not refresh:
-            raise AuthError("BAD_RESPONSE")
-        with self._lock:
-            self._adopt(Session(uid, json_.get("email") or email, refresh))
-            self._id_token = id_token
-            self._expires_at = time.time() + _seconds(json_.get("expiresIn"))
-
-    # ---- Google, through the site --------------------------------------------
-
-    def google_sign_in_url(self):
-        """The page that signs in with Google and returns to lovearound://signin,
-        with the session sealed to our one-time key."""
-        self._google_state = str(uuid.uuid4()).upper()
-        self._google_key = SignInKey()
-        return "%s/signin?state=%s&key=%s" % (config.SITE, self._google_state, self._google_key.public)
-
-    def complete_google(self, url):
+    def complete_sign_in(self, url):
         """lovearound://signin?state=…&epk=…&box=…, the box holding uid, email
         and the refresh token. The site before the box sent them in the clear
         (needed://signin?state=…&uid=…&email=…&rt=…); that is still accepted
@@ -267,24 +234,37 @@ class Auth:
         q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
         # The state proves the callback answers our own request, so a crafted
         # link cannot sign the app into someone else's account.
-        if not self._google_state or q.get("state") != self._google_state:
+        pending = self._pending
+        if pending is None or q.get("state") != pending[1]:
             raise AuthError("BAD_CALLBACK")
         if q.get("box"):
             try:
-                q = self._google_key.open(q.get("epk", ""), q["box"], self._google_state)
+                q = pending[2].open(q.get("epk", ""), q["box"], pending[1])
             except ValueError:
                 raise AuthError("BAD_CALLBACK") from None
         uid, rt = q.get("uid"), q.get("rt")
         if not isinstance(uid, str) or not uid or not isinstance(rt, str) or not rt:
             raise AuthError("BAD_CALLBACK")
-        self._google_state = self._google_key = None
+        self._pending = None
         with self._lock:
             self._adopt(Session(uid, q.get("email") or "", rt))
         self.token(force_refresh=True)
 
+    @property
+    def provider(self):
+        """How this session signed in: "google.com", "apple.com" or "password",
+        read from the ID token (a refreshed token keeps it). None before the first token."""
+        try:
+            payload = self._id_token.split(".")[1]
+            claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+            return claims["firebase"]["sign_in_provider"]
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError):
+            return None
+
     # ---- session ---------------------------------------------------------------
 
     def sign_out(self):
+        self._pending = None
         with self._lock:
             had_session = self.session is not None
             self.session = None
@@ -313,8 +293,3 @@ def _check(status, json_):
         code = error.get("message") if isinstance(error, dict) else None
         raise AuthError(code or "HTTP_%d" % status)
 
-
-def _post(method, body):
-    status, json_ = http.call("POST", "%s/%s?key=%s" % (config.FIREBASE_AUTH, method, config.FIREBASE_API_KEY), body=body)
-    _check(status, json_)
-    return json_

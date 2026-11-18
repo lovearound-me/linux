@@ -9,12 +9,12 @@ from . import widgets as w
 
 
 class SignInView(Gtk.Box):
+    """One button: Google, Apple and email all happen on lovearound.me/signin in the browser."""
+
     def __init__(self, model, quit_app):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         self.model = model
         self.quit_app = quit_app
-        self.message = None
-        self.busy = False
 
         top = w.vbox(10)
         top.set_margin_top(8)
@@ -32,21 +32,24 @@ class SignInView(Gtk.Box):
         self.stack.set_vhomogeneous(False)
         self.stack.set_interpolate_size(True)
 
-        self.google = w.button(tr("Войти через Google"), "primary", action=self._google)
-        self.stack.add_named(w.vbox(8, self.google,
-                                    w.button(tr("Войти по почте"), "secondary", action=lambda: self._mode(True))), "choose")
+        go = Gtk.Button()
+        go.set_relief(Gtk.ReliefStyle.NONE)
+        w.classes(go, "primary")
+        inside = w.hbox(7, Gtk.Image.new_from_icon_name("web-browser-symbolic", Gtk.IconSize.BUTTON),
+                        w.label(tr("Войти через браузер")))
+        inside.set_halign(Gtk.Align.CENTER)
+        go.add(inside)
+        go.connect("clicked", lambda _: self.model.sign_in_in_browser())
+        chips = w.hbox(6, w.chip("google", "Google"), w.chip("apple", "Apple"), w.chip("mail", tr("Почта")))
+        chips.set_halign(Gtk.Align.CENTER)
+        self.stack.add_named(w.vbox(10, go, chips), "choose")
 
-        self.email = w.entry("you@example.com")
-        self.email.set_input_purpose(Gtk.InputPurpose.EMAIL)
-        self.password = w.entry(tr("Не меньше 8 символов"), password=True)
-        self.email.connect("activate", lambda _: self.password.grab_focus())
-        self.password.connect("activate", lambda _: self._submit())
-        self.submit = w.button(tr("Войти или создать аккаунт"), "primary", action=self._submit)
-        links = Gtk.Box()
-        links.pack_start(w.button(tr("← Назад"), "textlink", "muted", "small", action=lambda: self._mode(False)), False, False, 0)
-        links.pack_end(w.button(tr("Забыли пароль?"), "textlink", "small", action=self._reset), False, False, 0)
-        self.stack.add_named(w.vbox(10, w.field(tr("Почта"), self.email), w.field(tr("Пароль"), self.password),
-                                    self.submit, links), "email")
+        waiting = w.button(tr("Продолжи в браузере…"), "primary")
+        waiting.set_sensitive(False)
+        again = w.hbox(5, w.label(tr("Страница не открылась?"), "muted", "small"),
+                       w.button(tr("Открыть ещё раз"), "textlink", "small", action=self.model.sign_in_in_browser))
+        again.set_halign(Gtk.Align.CENTER)
+        self.stack.add_named(w.vbox(8, waiting, again), "waiting")
         self.pack_start(self.stack, False, False, 0)
 
         self.note = w.label("", "muted", "small", wrap=True, xalign=0.5, width_chars=36)
@@ -60,71 +63,15 @@ class SignInView(Gtk.Box):
         self.pack_start(footer, False, False, 0)
         self.refresh()
 
-    def _mode(self, email):
-        self.message = None
-        self.stack.set_visible_child_name("email" if email else "choose")
-        if email:
-            self.email.grab_focus()
-        self.refresh()
-
-    def _google(self):
-        self.message = None
-        self.model.sign_in_with_google()
-
-    def _submit(self):
-        if self.busy:
-            return
-        email = self.email.get_text().strip()
-        password = self.password.get_text()
-        if not email:
-            self.message = tr("Введи почту")
-        elif len(password) < 8:
-            self.message = tr("Пароль нужен не короче 8 символов")
-        else:
-            self.busy = True
-            self.message = None
-
-            def done(_):
-                self.busy = False
-                self.password.set_text("")
-                self.refresh()
-
-            def fail(error):
-                self.busy = False
-                self.message = self.model.error_text(error)
-                self.refresh()
-            self.model.sign_in(email, password, done, fail)
-        self.refresh()
-
-    def _reset(self):
-        email = self.email.get_text().strip()
-        if not email:
-            self.message = tr("Сначала введи почту")
-            self.refresh()
-            return
-
-        def done(_):
-            self.message = tr("Письмо для нового пароля отправлено")
-            self.refresh()
-
-        def fail(error):
-            self.message = self.model.error_text(error)
-            self.refresh()
-        self.model.send_password_reset(email, done, fail)
-
     def refresh(self):
-        self.google.set_label(tr("Продолжи в браузере…") if self.model.waiting_for_browser else tr("Войти через Google"))
-        self.submit.set_label(tr("Входим…") if self.busy else tr("Войти или создать аккаунт"))
-        self.submit.set_sensitive(not self.busy)
-        text = self.message or self.model.problem
+        self.stack.set_visible_child_name("waiting" if self.model.waiting_for_browser else "choose")
+        text = self.model.problem
         self.note.set_text(text or "")
         self.note.set_visible(bool(text))
 
     def reset(self):
-        """Each opening starts from the two buttons, unless the email form is half filled."""
-        if not self.email.get_text() and not self.password.get_text():
-            self.stack.set_visible_child_name("choose")
-        self.message = None
+        """Each opening starts from the button."""
+        self.refresh()
 
 
 class AddForm(Gtk.Box):

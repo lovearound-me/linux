@@ -5,7 +5,7 @@ import re
 API_BASE = "https://api.lovearound.me"
 # Firebase Web API key: public, identifies the project to Firebase Auth.
 FIREBASE_API_KEY = "AIzaSyBZJfln_KXsxRxo3fvVaV1ePmiVUIn5YXY"
-# The site: install page, invite links /i/<code>, Google sign-in bridge /signin/.
+# The site: install page, invite links /i/<code>, the sign-in page /signin/.
 SITE = "https://lovearound.me"
 URL_SCHEME = "lovearound"
 # The old name: the site still sends needed:// links, the Mac and Windows apps take them.
@@ -13,10 +13,11 @@ OLD_URL_SCHEMES = ("needed",)
 URL_SCHEMES = (URL_SCHEME,) + OLD_URL_SCHEMES
 
 APP_ID = "me.lovearound.LoveAround"
+# The web app's «Способы входа»: adding Google, Apple or email to the account.
+SIGN_IN_METHODS = "https://app.lovearound.me/#/settings/signin"
 
 # Tests point the app at a fake server.
 API_BASE = os.environ.get("LOVEAROUND_API", API_BASE)
-FIREBASE_AUTH = os.environ.get("LOVEAROUND_AUTH", "https://identitytoolkit.googleapis.com/v1")
 FIREBASE_TOKEN = os.environ.get("LOVEAROUND_TOKEN", "https://securetoken.googleapis.com/v1/token")
 
 # The lovearound package's parent: the checkout, or install.sh's <prefix>/lib/lovearound.

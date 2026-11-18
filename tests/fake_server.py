@@ -1,9 +1,9 @@
-"""A stand-in for Firebase Auth and the server on localhost, for tests and
+"""A stand-in for Firebase's token refresh and the server on localhost, for tests and
 for screenshots: REST under /v1, the stream at /v1/stream, and /test/* to
 push a signal or look at what the app did.
 
     python3 tests/fake_server.py 8765
-    LOVEAROUND_API=http://127.0.0.1:8765 LOVEAROUND_AUTH=http://127.0.0.1:8765/auth \
+    LOVEAROUND_API=http://127.0.0.1:8765 \
     LOVEAROUND_TOKEN=http://127.0.0.1:8765/token python3 -m lovearound
 """
 import json
@@ -28,7 +28,6 @@ class Fake:
         self.sockets = []
         self.next_id = 1
         self.anyone_sent = False
-        self.users = {"me@example.com": "password1"}
 
     def seed(self, names, close=5):
         for i, name in enumerate(names):
@@ -57,22 +56,6 @@ def body_of(msg):
 def handle(server, msg, path, query):
     method = msg.get_method()
     raw = body_of(msg)
-    if path.startswith("/auth/accounts:"):
-        call = path.split(":", 1)[1]
-        j = json.loads(raw or b"{}")
-        if call == "sendOobCode":
-            return reply(msg, 200, {"email": j.get("email")})
-        email, password = j.get("email"), j.get("password")
-        if call == "signInWithPassword":
-            if fake.users.get(email) != password:
-                code = "INVALID_LOGIN_CREDENTIALS" if email in fake.users else "EMAIL_NOT_FOUND"
-                return reply(msg, 400, {"error": {"message": code}})
-        elif call == "signUp":
-            if email in fake.users:
-                return reply(msg, 400, {"error": {"message": "EMAIL_EXISTS"}})
-            fake.users[email] = password
-        return reply(msg, 200, {"localId": "uid-" + email, "email": email, "idToken": "id-token",
-                                "refreshToken": "refresh-1", "expiresIn": "3600"})
     if path == "/token":
         form = dict(urllib.parse.parse_qsl(raw.decode()))
         if form.get("refresh_token", "").startswith("bad"):

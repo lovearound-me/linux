@@ -25,6 +25,8 @@ BASE = """
 .la .card, .la .banner { background-color: @field; border-radius: 10px; }
 .la .banner { padding: 9px 10px; }
 .la separator { background-color: @hairline; min-height: 1px; }
+.la .chip { background-color: @field; border-radius: 999px; padding: 4px 9px; }
+.la .chip label { font-size: 12px; color: @muted; }
 
 .la button {
   background-color: transparent; background-image: none; border: none; box-shadow: none;

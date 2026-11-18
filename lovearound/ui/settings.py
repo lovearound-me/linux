@@ -53,6 +53,14 @@ def device_details(device, now=None):
     return text + (tr(" · был онлайн {ago}", ago=ago(seen, now)) if seen else tr(" · ещё не подключался"))
 
 
+def signed_in_with(provider):
+    return {
+        "apple.com": tr("Вход через Apple"),
+        "google.com": tr("Вход через Google"),
+        "password": tr("Вход по почте"),
+    }.get(provider) or tr("Книга хранится в аккаунте")
+
+
 def section(spacing, *children):
     return w.vbox(spacing, *children)
 
@@ -382,9 +390,19 @@ class SettingsWindow(Gtk.Window):
         else:
             who = Gtk.Box(spacing=12)
             w.pad(who, 12)
-            who.pack_start(w.Circle(40, model.email or "", palette.at(model.get("myColor")), ring=2.5), False, False, 0)
-            text = w.vbox(2, w.label(model.email or "", "strong", ellipsize=True),
-                          w.label(tr("Книга хранится в аккаунте"), "note"))
+            # Apple's "Hide my email" gives an address nobody would recognise.
+            hidden = (model.email or "").endswith("@privaterelay.appleid.com")
+            who.pack_start(w.Circle(40, model.email or "", palette.at(model.get("myColor")), ring=2.5, apple=hidden),
+                           False, False, 0)
+            methods = Gtk.Button()
+            methods.set_relief(Gtk.ReliefStyle.NONE)
+            w.classes(methods, "textlink", "note")
+            methods.add(w.hbox(2, w.label(tr("Способы входа")), w.Mark("arrow", 11, ink="link")))
+            methods.connect("clicked", lambda _: model.open_sign_in_methods())
+            methods.set_halign(Gtk.Align.START)
+            text = w.vbox(2, w.label("Apple ID" if hidden else model.email or "", "strong", ellipsize=True),
+                          w.label(tr("Почту скрыл Apple") if hidden else signed_in_with(model.provider), "note"),
+                          methods)
             text.set_valign(Gtk.Align.CENTER)
             who.pack_start(text, True, True, 0)
             out = w.button(tr("Выйти"), "small-button", action=model.sign_out)

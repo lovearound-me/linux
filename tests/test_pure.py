@@ -92,6 +92,25 @@ class EffectTest(unittest.TestCase):
         self.assertEqual(alpha(width // 2, height // 2), 0)
 
 
+class ProviderTest(unittest.TestCase):
+    def test_provider_comes_from_the_id_token(self):
+        import base64
+        import json
+        from lovearound.auth import Auth, MemoryStore, Session
+
+        def token(claims):
+            payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).decode().rstrip("=")
+            return "header.%s.signature" % payload
+
+        auth = Auth(MemoryStore(Session("uid", "x@privaterelay.appleid.com", "rt")))
+        self.assertIsNone(auth.provider)
+        auth._id_token = token({"firebase": {"sign_in_provider": "apple.com"}})
+        self.assertEqual(auth.provider, "apple.com")
+        for broken in ("id-token", token({}), token({"firebase": "x"}), "a.!!!.b"):
+            auth._id_token = broken
+            self.assertIsNone(auth.provider)
+
+
 class IconsTest(unittest.TestCase):
     def test_argb_unpremultiplied(self):
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 2, 1)
@@ -119,6 +138,20 @@ class IconsTest(unittest.TestCase):
             top = px * 4 * int(px * 0.4)
             self.assertEqual(plain[:top], marked[:top])
         self.assertEqual(icons.app_icon(64).get_width(), 64)
+
+    def test_sign_in_marks_draw(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 24, 24)
+        cr = cairo.Context(surface)
+        icons.apple_path(cr, 0, 0, 24)
+        x1, y1, x2, y2 = cr.fill_extents()
+        # The whole logo, inside its box.
+        self.assertGreater(y2 - y1, 18)
+        self.assertTrue(0 < x1 < x2 < 24 and 0 < y1 < y2 < 24)
+        for mark in (icons.mail_mark, icons.arrow_mark):
+            cr.new_path()
+            mark(cr, 0, 0, 24)
+            self.assertGreater(cr.stroke_extents()[2], 15)
+        icons.google_mark(cr, 12, 12, 20)
 
 
 if __name__ == "__main__":

@@ -63,6 +63,10 @@ BASE = """
   border-radius: 8px; min-height: 32px; box-shadow: none; padding: 0 8px;
 }
 .la entry:focus { border-color: alpha(@heart, 0.7); }
+/* One's own link in "add by link": a red field and a note with a way to send it. */
+.la entry.bad, .la entry.bad:focus { border: 2px solid @danger; background-color: alpha(@danger, 0.08); color: @danger; }
+.la .own-link { background-color: alpha(@danger, 0.08); border: 1px solid alpha(@danger, 0.3); border-radius: 10px; }
+.la button.pill.plain { background-color: @paper; border: 1px solid @hairline; }
 .la entry.name { font-size: 22px; font-weight: 700; border: none; border-bottom: 1px solid @hairline;
   border-radius: 0; background-color: transparent; padding: 0; }
 .la entry.name:focus { border-bottom: 2px solid @heart; }

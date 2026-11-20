@@ -4,8 +4,15 @@ from gi.repository import Gtk
 
 from .. import config, palette
 from ..model import invite_id
-from ..i18n import tr
+from ..i18n import N_, tr
 from . import widgets as w
+
+
+SHARE_MESSAGE = N_("Добавь меня по этой ссылке и нажимай сердечко, когда думаешь обо мне ♥")
+
+
+def _bare(code):
+    return code.upper().replace("-", "") if code else None
 
 
 class SignInView(Gtk.Box):
@@ -96,19 +103,21 @@ class AddForm(Gtk.Box):
         invite = invite or model.pasted_invite(model.clipboard_text())
         self.link = w.entry("lovearound.me/i/…", text="%s/i/%s" % (config.SITE, invite) if invite else "")
         self.lookup = w.label("", "small")
-        link_box = w.vbox(4, w.field(tr("Ссылка-приглашение"), self.link), self.lookup)
+        self.own_note = self._own_note()
+        link_box = w.vbox(4, w.field(tr("Ссылка-приглашение"), self.link), self.lookup, self.own_note)
         self.pack_start(link_box, False, False, 0)
 
         self.name = w.entry(tr("Например, Мама"))
         self.name.connect("activate", lambda _: self._save())
-        self.pack_start(w.field(tr("Как назовёшь?"), self.name), False, False, 0)
 
         colors = Gtk.Box()
         colors.pack_start(w.caption(tr("Цвет")), False, False, 0)
         self.color_name = w.label("", "small")
         colors.pack_end(self.color_name, False, False, 0)
         self.swatches = w.SwatchPicker(self.color, 30, self._pick)
-        self.pack_start(w.vbox(8, colors, self.swatches), False, False, 0)
+        # Faded while the link is one's own: there is nobody to name.
+        self.rest = w.vbox(14, w.field(tr("Как назовёшь?"), self.name), w.vbox(8, colors, self.swatches))
+        self.pack_start(self.rest, False, False, 0)
 
         self.save = w.button(tr("Добавить"), "primary", action=self._save)
         self.pack_start(self.save, False, False, 0)
@@ -130,7 +139,31 @@ class AddForm(Gtk.Box):
         return bool(self.label)
 
     def focus(self):
-        (self.name if self.code else self.link).grab_focus()
+        (self.name if self.code and not self.own else self.link).grab_focus()
+
+    @property
+    def own(self):
+        """One's own link, pasted to add oneself."""
+        return self.code is not None and _bare(self.code) == _bare(invite_id(self.model.invite_url or ""))
+
+    def _own_note(self):
+        """Under the link field when it holds one's own link: what it is for, a
+        copy of it with the line to send along, and a way out."""
+        icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic", Gtk.IconSize.MENU)
+        icon.get_style_context().add_class("danger")
+        icon.set_valign(Gtk.Align.START)
+        text = w.vbox(2, w.label(tr("Это твоя собственная ссылка"), "danger", "strong", wrap=True),
+                      w.label(tr("Отправь её тому, кто будет о тебе думать."), "small", wrap=True, width_chars=30))
+        self.copy = w.button(tr("Скопировать"), "pill", "danger", action=self._copy_own)
+        clear = w.button(tr("Очистить"), "pill", "plain", action=lambda: (self.link.set_text(""), self.link.grab_focus()))
+        note = w.card(w.hbox(7, icon, text), w.hbox(6, self.copy, clear), padding=10, spacing=9, cls="own-link")
+        note.set_no_show_all(True)
+        return note
+
+    def _copy_own(self):
+        self.model.set_clipboard(tr(SHARE_MESSAGE) + " " + self.model.invite_url)
+        self.copy.set_label(tr("Скопировано"))
+        w.later(1600, lambda: self.copy.set_label(tr("Скопировать")))
 
     def _pick(self, index):
         self.color = index
@@ -146,6 +179,19 @@ class AddForm(Gtk.Box):
     def _update(self):
         text = self.link.get_text().strip()
         self.code = invite_id(text) if text else None
+        own = self.own
+        if own:
+            # Kept out of the window's show_all, so shown by hand, children too.
+            self.own_note.set_no_show_all(False)
+            self.own_note.show_all()
+            self.own_note.set_no_show_all(True)
+        else:
+            self.own_note.hide()
+        self.lookup.set_visible(not own)
+        self.rest.set_sensitive(not own)
+        self.rest.set_opacity(0.4 if own else 1.0)
+        context = self.link.get_style_context()
+        (context.add_class if own else context.remove_class)("bad")
         if not text:
             self.lookup.set_text(tr("Вставь ссылку, которую тебе прислали"))
             self._set_classes(self.lookup, "small", "faint")
@@ -159,7 +205,7 @@ class AddForm(Gtk.Box):
         self.color_name.set_text(color.name)
         self._set_classes(self.color_name, "small", "deep", "c%d" % self.color)
         self.save.set_label(tr("Сохраняем…") if self.busy else tr("Добавить"))
-        self.save.set_sensitive(not self.busy and 1 <= len(self.label) <= 64 and self.code is not None)
+        self.save.set_sensitive(not self.busy and 1 <= len(self.label) <= 64 and self.code is not None and not own)
         self.note.set_text(tr("{name} не увидит ни имя, ни цвет. Кружки можно переставлять перетаскиванием.",
                               name=self.label or tr("Человек")))
 

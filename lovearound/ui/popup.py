@@ -31,7 +31,6 @@ DRAG_TARGET = "application/x-lovearound-contact"
 RELOGIN_BANNER = N_("Свечение по краям экрана включится после нового входа в систему. Пока сигналы приходят уведомлением.")
 RELOGIN_TEXT = N_("Чтобы сигналы светились по краям экрана, выйди из системы и войди снова. "
                   "Это нужно один раз после установки.")
-SHARE_MESSAGE = N_("Добавь меня по этой ссылке и нажимай сердечко, когда думаешь обо мне ♥")
 
 
 class MainView(Gtk.Box):
@@ -298,7 +297,7 @@ class MainView(Gtk.Box):
         """No share sheet here: the invite with a line of text goes to the clipboard, for a chat."""
         if not self.model.invite_url:
             return
-        self.model.set_clipboard(tr(SHARE_MESSAGE) + " " + self.model.invite_url)
+        self.model.set_clipboard(tr(forms.SHARE_MESSAGE) + " " + self.model.invite_url)
         self.share.set_label(tr("Скопировано — вставь в чат"))
         w.later(2000, lambda: self.share.set_label(tr("Поделиться своим Love ID")))
 

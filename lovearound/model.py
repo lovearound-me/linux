@@ -138,7 +138,7 @@ class AppModel(GObject.Object):
         self._going_offline = None
         self._reorder_save = None
 
-        self.stream.anyone = self.settings["acceptAnyone"]
+        self.stream.anyone = self.takes_anyone
         self.stream.on_signal = self.receive
         self.stream.on_auth_lost = self.sign_out
         self.stream.on_online = self._connection_changed
@@ -160,10 +160,18 @@ class AppModel(GObject.Object):
         if self.settings[key] == value:
             return
         self.settings[key] = value
-        if key == "acceptAnyone":
-            self.stream.anyone = value
+        if key in ("acceptAnyone", "receiveHere") and self.stream.anyone != self.takes_anyone:
+            self.stream.anyone = self.takes_anyone
             self.stream.restart()
+        if key == "receiveHere":
+            # Not receiving here dims the heart, like a pause.
+            self.emit("icon-changed")
         self.changed()
+
+    @property
+    def takes_anyone(self):
+        """The stream asks for signals to anyone only while this computer shows them."""
+        return self.settings["acceptAnyone"] and self.settings["receiveHere"]
 
     @property
     def min_gap(self):
@@ -312,7 +320,7 @@ class AppModel(GObject.Object):
         return palette.at(self.settings["myColor"]).color
 
     def receive(self):
-        if self.is_paused:
+        if self.is_paused or not self.settings["receiveHere"]:
             return
         # Not shown, and not saved for later: a signal is about the moment.
         if self.settings["quietWhenPresenting"] and self.presenting():

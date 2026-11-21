@@ -168,7 +168,10 @@ def menu_items(model, actions, update=None):
         if not model.contacts:
             items.append(Item("add", tr("Добавить по ссылке…"), actions["add"]))
         items.append(Item("sep-pause", separator=True))
-        if model.is_paused:
+        if not model.get("receiveHere"):
+            items.append(Item("pause-text", tr("Не получает сердечки"), enabled=False))
+            items.append(Item("receive-on", tr("Получать сердечки снова"), lambda: model.set("receiveHere", True)))
+        elif model.is_paused:
             # No action: shown greyed, as a status line.
             items.append(Item("pause-text", model.pause_text(), enabled=False))
             items.append(Item("resume", tr("Снять паузу"), model.resume))
@@ -265,7 +268,9 @@ class Tray:
     # ---- the item ------------------------------------------------------------
 
     def _sni_get(self, connection, sender, path, iface, prop):
-        if self.model.is_paused:
+        if not self.model.get("receiveHere"):
+            tooltip = tr("Не получает сердечки")
+        elif self.model.is_paused:
             tooltip = self.model.pause_text()
         elif self.update and self.update[0] in UPDATE_OFFERED:
             tooltip = tr("Доступна версия {version}", version=self.update[1])
@@ -290,7 +295,7 @@ class Tray:
 
     def _pixmaps(self):
         if self.pixmaps is None:
-            paused = self.model.is_paused and self.tint is None
+            paused = (self.model.is_paused or not self.model.get("receiveHere")) and self.tint is None
             marked = self.update is not None and self.update[0] in UPDATE_MARKED
             self.pixmaps = [(px, px, icons.argb_bytes(icons.tray_surface(px, self.tint, paused, marked)))
                             for px in ICON_SIZES]

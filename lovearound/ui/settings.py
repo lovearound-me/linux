@@ -71,6 +71,60 @@ def switch_card(*rows, cls="card"):
     return box
 
 
+class LookPicker(Gtk.Box):
+    """"Кружки в меню": two cards, bare circles or circles with names, each
+    with a small picture of the menu."""
+
+    DOTS = [palette.at(1), palette.at(3), palette.at(4), palette.at(5)]
+
+    def __init__(self, named, on_change):
+        super().__init__(spacing=8, homogeneous=True)
+        self.on_change = on_change
+        self.buttons = []
+        for value, title in ((False, tr("Только кружки")), (True, tr("С именами"))):
+            picture = Gtk.DrawingArea()
+            picture.set_size_request(96, 30)
+            picture.connect("draw", self._draw, value)
+            button = Gtk.ToggleButton()
+            button.set_relief(Gtk.ReliefStyle.NONE)
+            w.classes(button, "look")
+            button.add(w.vbox(6, picture, w.label(title, "strong", xalign=0.5)))
+            button.connect("toggled", self._toggled, value)
+            self.buttons.append((value, button))
+            self.pack_start(button, True, True, 0)
+        self.select(named)
+
+    def _draw(self, area, cr, named):
+        width = area.get_allocated_width()
+        step, r = 23, 9
+        x0 = (width - step * (len(self.DOTS) - 1)) / 2
+        for i, color in enumerate(self.DOTS):
+            x = x0 + i * step
+            cr.set_source_rgb(*[(color.color >> s & 255) / 255 for s in (16, 8, 0)])
+            cr.arc(x, r + 1, r, 0, 6.2832)
+            cr.fill()
+            if named:
+                cr.set_source_rgba(0.5, 0.42, 0.38, 0.7)
+                cr.rectangle(x - 8, 2 * r + 6, 16, 3)
+                cr.fill()
+
+    def select(self, named):
+        self.updating = True
+        for value, button in self.buttons:
+            button.set_active(value == named)
+        self.updating = False
+
+    def _toggled(self, button, value):
+        if self.updating:
+            return
+        if not button.get_active():
+            # Clicking the chosen card again keeps it chosen.
+            self.select(value)
+            return
+        self.select(value)
+        self.on_change(value)
+
+
 class DevicesTab(Gtk.Box):
     """A toy, a lamp or any board that receives signals or sends them; how to wire one up: SITE/docs."""
 
@@ -324,6 +378,9 @@ class SettingsWindow(Gtk.Window):
         play = w.button("▶  " + tr("Показать, как это выглядит"), "play", action=model.play_effect)
         self.signal_tab.pack_start(play, False, False, 0)
 
+        self.look = LookPicker(model.get("circleNames"), lambda v: model.set("circleNames", v))
+        self.signal_tab.pack_start(section(8, w.caption(tr("Кружки в меню")), self.look), False, False, 0)
+
     def _emoji(self, scale):
         value = int(round(scale.get_value() / 2) * 2)
         self.model.set("emojiCount", value)
@@ -332,6 +389,13 @@ class SettingsWindow(Gtk.Window):
 
     def _build_when(self):
         model = self.model
+        self.receive = w.SwitchRow(tr("Получать сердечки на этом компьютере"), model.get("receiveHere"),
+                                   lambda v: model.set("receiveHere", v))
+        self.when_tab.pack_start(section(6, switch_card(self.receive),
+                                         w.note(tr("Выключишь, и этот компьютер не засветится. Телефон, часы и игрушки "
+                                                "получают как раньше. Отправлять сердечки он может всегда."))),
+                                 False, False, 0)
+
         self.pause_caption = w.caption(tr("Пауза"))
         self.pause_buttons = Gtk.Box(spacing=6, homogeneous=True)
         self.when_tab.pack_start(section(8, self.pause_caption, self.pause_buttons), False, False, 0)
@@ -515,6 +579,8 @@ class SettingsWindow(Gtk.Window):
         self.gap_value.set_text(m.gap_title(model.min_gap))
         self.quiet.set_active(model.get("quietWhenPresenting"))
         self.anyone.set_active(model.get("acceptAnyone"))
+        self.receive.set_active(model.get("receiveHere"))
+        self.look.select(model.get("circleNames"))
         self.autostart.set_active(self.system.autostart_enabled())
         if self.stack.get_visible_child() is not self.devices_tab or not model.signed_in:
             self.devices_tab.set_sensitive(model.signed_in)

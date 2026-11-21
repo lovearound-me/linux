@@ -15,6 +15,11 @@ DEFAULTS = {
     "quietWhenPresenting": True,
     "minGap": 1,
     "acceptAnyone": True,
+    # "Получать сердечки на этом компьютере": off, no signal shows here at all
+    # and the stream asks for none to anyone; sending still works.
+    "receiveHere": True,
+    # "Кружки в меню": each circle with its name under it, not only on hover.
+    "circleNames": False,
     "anyoneSentAt": None,
     "lastSent": {},
     "pausedUntil": None,

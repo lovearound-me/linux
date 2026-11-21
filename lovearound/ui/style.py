@@ -20,6 +20,7 @@ BASE = """
 .la .note { font-size: 11.5px; color: @faint; }
 .la .caption { font-size: 12px; font-weight: 600; color: @muted; }
 .la .caption-strong { font-size: 12.5px; font-weight: 600; }
+.la .circle-name { font-size: 11.5px; font-weight: 600; color: @muted; }
 .la .strong { font-size: 12.5px; font-weight: 600; }
 .la .name { font-size: 14.5px; font-weight: 500; }
 .la .card, .la .banner { background-color: @field; border-radius: 10px; }
@@ -93,6 +94,8 @@ BASE = """
 .la switch slider { background-color: #ffffff; background-image: none; border: none; }
 .la .switchrow { padding: 4px 12px; }
 .la .anyone-card { background-color: @anyone2; border-radius: 10px; }
+.la button.look { background-color: @field; border-radius: 12px; padding: 12px 8px 10px; }
+.la button.look:checked { box-shadow: inset 0 0 0 2px @link; }
 .la .tokenbox { background-color: @input; border: 1px solid @hairline; border-radius: 8px; }
 .la .token { font-family: monospace; font-size: 12px; }
 .la .device { padding: 0 6px 0 10px; }

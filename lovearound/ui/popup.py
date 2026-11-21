@@ -59,6 +59,7 @@ class MainView(Gtk.Box):
         self.pack_start(self.grid, False, False, 0)
         self.caption = w.label(" ", xalign=0.5, ellipsize=True)
         self.caption.set_size_request(-1, 18)
+        self.caption.set_no_show_all(True)
         self.pack_start(self.caption, False, False, 0)
 
         self.empty = w.vbox(6, w.label(tr("Пока никого нет"), "title", xalign=0.5))
@@ -103,7 +104,11 @@ class MainView(Gtk.Box):
             self.banners.pack_start(w.banner("system-log-out-symbolic", tr(RELOGIN_BANNER),
                                              w.button(tr("Выйти из системы"), "textlink",
                                                       action=lambda: model.emit("log-out"))), False, False, 0)
-        if model.is_paused:
+        if not model.get("receiveHere"):
+            self.banners.pack_start(w.banner("weather-clear-night-symbolic", tr("Этот компьютер не получает сердечки."),
+                                             w.button(tr("Включить"), "textlink",
+                                                      action=lambda: model.set("receiveHere", True))), False, False, 0)
+        elif model.is_paused:
             self.banners.pack_start(w.banner("weather-clear-night-symbolic", tr("{pause}. Сигналы не придут.", pause=model.pause_text()),
                                              w.button(tr("Снять"), "textlink", action=model.resume)), False, False, 0)
         self.banners.show_all()
@@ -132,25 +137,40 @@ class MainView(Gtk.Box):
     def _fill_circles(self):
         model = self.model
         close = model.close_contacts
-        signature = ([(c.id, c.label, model.color_index(c)) for c in close], bool(model.contacts), style.dark())
+        # Settings → "Кружки в меню": bare circles (the name in the caption on
+        # hover), or each with its name under it.
+        named = model.get("circleNames")
+        signature = ([(c.id, c.label, model.color_index(c)) for c in close], bool(model.contacts), style.dark(), named)
         if signature != self.signature:
             self.signature = signature
             w.clear(self.grid)
+            self.grid.set_column_spacing(1 if named else 5)
+            self.grid.set_row_spacing(8 if named else 4)
+
+            def cell(button, name):
+                if not named:
+                    return button
+                text = w.label(name, "circle-name", xalign=0.5, ellipsize=True)
+                text.set_max_width_chars(8)
+                text.set_size_request(62, -1)
+                return w.vbox(1, button, text)
+
             self.circles = {}
             self.anyone = w.AnyoneCircle(50)
-            cells = [w.circle_button(self.anyone, "", model.send_to_anyone)]
-            self._hover(cells[0], m.ANYONE_ID)
+            anyone = w.circle_button(self.anyone, "", model.send_to_anyone)
+            self._hover(anyone, m.ANYONE_ID)
+            cells = [cell(anyone, tr("Кому-то"))]
             for contact in close:
                 circle = w.Circle(50, contact.label, model.color_for(contact), filled=True)
                 self.circles[contact.id] = circle
                 button = w.circle_button(circle, contact.label, lambda c=contact: self._send(c))
                 self._hover(button, contact.id)
                 self._draggable(button, circle, contact)
-                cells.append(button)
+                cells.append(cell(button, contact.label))
             plus = w.Circle(50)
             plus.dashed = True
             title = tr("Добавить по ссылке") if not model.contacts else tr("Добавить кружок")
-            cells.append(w.circle_button(plus, title, self._plus))
+            cells.append(cell(w.circle_button(plus, title, self._plus), ""))
             for index, cell in enumerate(cells):
                 self.grid.attach(cell, index % 5, index // 5, 1, 1)
             self.grid.show_all()
@@ -239,6 +259,9 @@ class MainView(Gtk.Box):
             text, names = tr("Нажми «+», чтобы добавить кружки"), ("caption-strong", "faint")
         else:
             text, names = " ", ("caption-strong",)
+        # With names under the circles the caption only says what just happened.
+        named = model.get("circleNames")
+        self.caption.set_visible(not named or model.sent is not None or self.hovered == m.ANYONE_ID or just)
         self.caption.set_text(text)
         context = self.caption.get_style_context()
         for name in list(context.list_classes()):

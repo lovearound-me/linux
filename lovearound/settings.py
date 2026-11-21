@@ -35,6 +35,11 @@ class Settings:
     def __init__(self, path=None):
         self.path = path or os.path.join(config.config_dir(), "settings.json")
         self.values = dict(DEFAULTS)
+        # No settings file yet: the app's first launch here. Saved at once, so
+        # the next launch isn't a first one too.
+        self.first_launch = not os.path.exists(self.path)
+        if self.first_launch:
+            self.save()
         try:
             with open(self.path) as f:
                 stored = json.load(f)

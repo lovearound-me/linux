@@ -140,10 +140,23 @@ class App(Gtk.Application):
         elif not links and not options.get("background"):
             # Opened by hand from the app list: the menu, wherever the tray is.
             self.popup.show_at()
+            if self.model.settings.first_launch:
+                # Wayland gives the clipboard only to a focused window.
+                GLib.timeout_add(400, self._first_launch_invite)
         elif options.get("background") and not command_line.get_is_remote():
             # Started at login: the window only if there is nothing else to click.
             GLib.timeout_add_seconds(TRAY_GRACE_SECONDS, self._no_tray_check)
         return 0
+
+    def _first_launch_invite(self):
+        """Downloaded from someone's Love ID page: the page put the link on the
+        clipboard, so the first launch opens «Добавить» with it (after signing
+        in). Only the first launch looks; nothing leaves the computer."""
+        self.model.settings.first_launch = False
+        code = self.model.pasted_invite(self.model.clipboard_text())
+        if code:
+            self.model.handle(f"{config.URL_SCHEMES[0]}://add/{code}")
+        return False
 
     def _no_tray_check(self):
         if not self.has_tray and not self.model.signed_in:
